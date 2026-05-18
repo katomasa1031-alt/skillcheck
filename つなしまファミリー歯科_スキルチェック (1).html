@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>衛生士スキルチェックシート</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f7f6f3; --surface: #ffffff; --surface2: #f2f0ec;
+    --border: rgba(0,0,0,0.10); --border2: rgba(0,0,0,0.18);
+    --text: #1a1a18; --text2: #5a5a55; --text3: #999990;
+    --accent: #3d6b8c; --accent-light: #e8f1f7;
+    --green: #3b6d11; --green-bg: #eaf3de;
+    --amber: #854f0b; --amber-bg: #faeeda;
+    --red: #a32d2d; --red-bg: #fcebeb;
+    --purple: #534ab7; --purple-bg: #eeedfe;
+    --radius: 10px; --radius-sm: 6px;
+  }
+  body { font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; -webkit-text-size-adjust: 100%; }
+
+  /* ===== LAYOUT ===== */
+  .app { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+
+  /* トップバー */
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; height: 52px; position: sticky; top: 0; z-index: 100; flex-shrink: 0; }
+  .topbar-logo { font-size: 14px; font-weight: 600; color: var(--text); }
+  .topbar-logo span { color: var(--accent); }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+  /* メインコンテンツ */
+  .content { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 80px; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ===== ボトムナビ ===== */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px; cursor: pointer; border: none; background: transparent; color: var(--text3); font-size: 10px; font-family: inherit; gap: 3px; transition: color .15s; -webkit-tap-highlight-color: transparent; }
+  .nav-btn .nav-icon { font-size: 20px; line-height: 1; }
+  .nav-btn.active { color: var(--accent); }
+  .nav-btn.active .nav-icon { transform: scale(1.1); }
+
+  /* ===== 衛生士セレクター ===== */
+  .trainee-selector { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .trainee-selector::-webkit-scrollbar { display: none; }
+  .ts-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; cursor: pointer; padding: 4px 8px; border-radius: var(--radius); transition: background .12s; -webkit-tap-highlight-color: transparent; }
+  .ts-btn.active .ts-avatar { border: 2.5px solid var(--accent); }
+  .ts-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--purple-bg); color: var(--purple); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; border: 2.5px solid transparent; transition: border-color .15s; }
+  .ts-name { font-size: 11px; color: var(--text2); white-space: nowrap; }
+  .ts-pct { font-size: 11px; font-weight: 700; }
+
+  /* ===== サマリーカード ===== */
+  .summary-card { background: var(--accent); color: #fff; border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .summary-name { font-size: 13px; opacity: .8; margin-bottom: 2px; }
+  .summary-pct { font-size: 36px; font-weight: 700; line-height: 1; margin-bottom: 8px; }
+  .summary-sub { font-size: 12px; opacity: .75; margin-bottom: 10px; }
+  .summary-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.3); overflow: hidden; }
+  .summary-bar-fill { height: 100%; border-radius: 3px; background: #fff; transition: width .5s; }
+
+  /* ===== シートスクロールタブ ===== */
+  .sheet-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 14px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .sheet-scroll::-webkit-scrollbar { display: none; }
+  .sheet-chip { padding: 7px 14px; border: 1px solid var(--border2); border-radius: 20px; font-size: 13px; cursor: pointer; background: var(--surface); color: var(--text2); white-space: nowrap; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+  .sheet-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ===== カテゴリカード ===== */
+  .cat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; }
+  .cat-header { display: flex; align-items: center; gap: 10px; padding: 13px 14px; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+  .cat-name { font-weight: 600; font-size: 14px; flex: 1; }
+  .cat-bar-wrap { width: 60px; }
+  .cat-bar { height: 4px; border-radius: 2px; background: var(--surface2); overflow: hidden; }
+  .cat-bar-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width .3s; }
+  .cat-pct { font-size: 12px; font-weight: 600; color: var(--text2); min-width: 30px; text-align: right; }
+  .cat-chevron { font-size: 10px; color: var(--text3); transition: transform .2s; }
+  .cat-card.collapsed .cat-chevron { transform: rotate(-90deg); }
+  .cat-card.collapsed .cat-body { display: none; }
+  .cat-body { border-top: 1px solid var(--border); }
+
+  /* ===== タスク行 ===== */
+  .task-item { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+  .task-item:last-child { border-bottom: none; }
+  .task-top { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+  .task-num { font-size: 11px; color: var(--text3); min-width: 18px; margin-top: 2px; flex-shrink: 0; }
+  .task-text { flex: 1; font-size: 14px; line-height: 1.55; }
+  .task-text.done { color: var(--text3); text-decoration: line-through; }
+  .stars { display: flex; gap: 4px; }
+  .star { width: 44px; height: 44px; flex-shrink: 0; border: 1px solid var(--border2); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; font-weight: 600; color: var(--text3); background: var(--surface); transition: all .12s; -webkit-tap-highlight-color: transparent; }
+  .star.active { background: var(--amber-bg); color: var(--amber); border-color: var(--amber); }
+  .self-star { color: var(--text3); }
+  .self-star.active { background: #e8f1f7; color: var(--accent); border-color: var(--accent); }
+  .admin-star { color: var(--text3); }
+  .admin-star.admin-active { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+  .admin-star-disp { width: 44px; height: 44px; flex-shrink: 0; border: 1px solid var(--border2); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; color: var(--text3); background: var(--surface); cursor: default; }
+  .admin-star-disp.admin-active { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+  .s-star.admin-on { color: var(--green); }
+  .rijicho-star { color: var(--text3); }
+  .rijicho-star.rijicho-active { background: var(--purple-bg); color: var(--purple); border-color: var(--purple); }
+  .s-star.rijicho-on { color: var(--purple); }
+
+  /* ===== 教育者ビュー ===== */
+  .tc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .tc.selected { border-color: var(--accent); border-width: 1.5px; }
+  .tc-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .tc-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--purple-bg); color: var(--purple); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  .tc-name { font-weight: 600; font-size: 15px; }
+  .tc-sub { font-size: 12px; color: var(--text3); }
+  .tc-pct { font-size: 22px; font-weight: 700; margin-left: auto; }
+  .overall-bar { height: 6px; border-radius: 3px; background: var(--surface2); overflow: hidden; }
+  .overall-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+  .fill-green { background: var(--green); } .fill-amber { background: #ef9f27; } .fill-red { background: #e24b4a; }
+
+  /* 詳細パネル */
+  .detail-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-top: 14px; }
+  .detail-top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .sp-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .sp-name { font-size: 13px; flex: 1; }
+  .sp-bar { height: 6px; border-radius: 3px; background: var(--surface2); overflow: hidden; width: 80px; flex-shrink: 0; }
+  .sp-fill { height: 100%; border-radius: 3px; transition: width .3s; }
+  .sp-pct { font-size: 12px; font-weight: 600; min-width: 32px; text-align: right; }
+  .ast-sheet { margin-top: 18px; }
+  .ast-header { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+  .ast-cat-name { font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: .05em; margin: 10px 0 4px; }
+  .ast-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .ast-item:last-child { border-bottom: none; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-g { background: var(--green); } .dot-a { background: #ef9f27; } .dot-x { background: #ccc; }
+  .badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 9px; font-weight: 600; flex-shrink: 0; }
+  .b-done { background: var(--green-bg); color: var(--green); }
+  .b-wip { background: var(--amber-bg); color: var(--amber); }
+  .b-todo { background: var(--surface2); color: var(--text3); }
+  .s-star { font-size: 11px; }
+  .s-star.on { color: var(--amber); } .s-star.off { color: #ddd; }
+
+  /* ===== 設定ビュー ===== */
+  .settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
+  .settings-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .trainee-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .trainee-row:last-child { border-bottom: none; }
+  .te-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--purple-bg); color: var(--purple); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .te-fields { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  input[type=text], input[type=text]:not([class]) { border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 14px; color: var(--text); background: var(--bg); width: 100%; font-family: inherit; transition: border-color .15s; -webkit-appearance: none; }
+  input[type=text]:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+  .btn { padding: 10px 16px; border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; border: 1px solid var(--border2); background: var(--surface); color: var(--text2); transition: all .15s; font-family: inherit; -webkit-tap-highlight-color: transparent; }
+  .btn-danger { border-color: #f7c1c1; color: var(--red); background: var(--red-bg); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-sm { padding: 7px 12px; font-size: 13px; }
+  .btn-block { width: 100%; text-align: center; margin-top: 8px; }
+  .sheet-selector { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .ss-btn { padding: 6px 12px; border: 1px solid var(--border2); border-radius: 15px; font-size: 12px; cursor: pointer; background: var(--surface); color: var(--text2); }
+  .ss-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .edit-cat { border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 10px; overflow: hidden; }
+  .edit-cat-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface2); }
+  .edit-items { padding: 8px 12px; }
+  .edit-item-row { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+  .edit-item-row input { flex: 1; }
+  .info-box { background: var(--accent-light); border: 1px solid #b8d4e8; border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px; color: var(--accent); margin-bottom: 14px; line-height: 1.6; }
+  .json-area { width: 100%; height: 120px; border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 8px; font-size: 11px; font-family: 'Courier New', monospace; color: var(--text); background: var(--bg); resize: vertical; }
+  .btn-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+
+  /* PC用レイアウト */
+  .main { display: flex; height: calc(100vh - 52px); overflow: hidden; }
+  .sidebar { width: 210px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; padding: 12px 0; }
+  .sb-section { padding: 4px 12px; font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: .06em; margin-top: 8px; }
+  .sb-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px; cursor: pointer; font-size: 13px; color: var(--text2); border-left: 3px solid transparent; transition: all .12s; }
+  .sb-item:hover { background: var(--surface2); color: var(--text); }
+  .sb-item.active { background: var(--accent-light); color: var(--accent); border-left-color: var(--accent); font-weight: 500; }
+  .sb-pct { margin-left: auto; font-size: 11px; font-weight: 600; }
+  .view-btn { padding: 6px 14px; border: 1px solid var(--border2); border-radius: 20px; font-size: 13px; cursor: pointer; background: transparent; color: var(--text2); transition: all .15s; white-space: nowrap; }
+  .view-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  /* PC/スマホ切替 */
+  .desktop-only { display: none !important; }
+  .mobile-only { display: block; }
+  .mobile-only.bottom-nav { display: flex; }
+  #mobile-content { display: block; flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 80px; }
+  @media (min-width: 640px) {
+    .desktop-only { display: flex !important; }
+    .mobile-only { display: none !important; }
+    .bottom-nav { display: none !important; }
+    .content { max-width: none; padding: 24px; padding-bottom: 24px; }
+    .main .content { flex: 1; overflow-y: auto; }
+  }
+
+  @media print {
+    .topbar, .bottom-nav { display: none !important; }
+    .content { padding: 0; }
+  }
+</style>
+</head>
+<body>
+<div id="app-root"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== SUPABASE =====
+const SB_URL = 'https://flyjqpbapabwykyqtaye.supabase.co';
+const SB_KEY = 'sb_publishable_zA9ZyYRQN_wHSmh1OXOWKg_1GYVG_Jb';
+
+async function sbFetch(path, opts={}) {
+  const res = await fetch(SB_URL + path, {
+    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation', ...opts.headers },
+    ...opts
+  });
+  if (!res.ok) { const t = await res.text(); throw new Error(t); }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function dbGetSetting(key) {
+  try {
+    const rows = await sbFetch(`/rest/v1/settings?key=eq.${encodeURIComponent(key)}&select=value`);
+    return rows?.length ? rows[0].value : null;
+  } catch(e) { return null; }
+}
+async function dbSetSetting(key, value) {
+  await sbFetch('/rest/v1/settings', {
+    method: 'POST',
+    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify({ key, value, updated_at: new Date().toISOString() })
+  });
+}
+async function dbGetAllScores() {
+  try {
+    const rows = await sbFetch('/rest/v1/scores?select=*');
+    const result = {};
+    (rows||[]).forEach(r => {
+      if (!result[r.trainee_id]) result[r.trainee_id] = {};
+      if (!result[r.trainee_id][r.sheet_id]) result[r.trainee_id][r.sheet_id] = {};
+      if (!result[r.trainee_id][r.sheet_id][r.cat_index]) result[r.trainee_id][r.sheet_id][r.cat_index] = {};
+      result[r.trainee_id][r.sheet_id][r.cat_index][r.item_index] = {
+        self: r.self_score || 0,
+        admin: r.admin_score || 0,
+        rijicho: r.rijicho_score || 0
+      };
+    });
+    return result;
+  } catch(e) { return {}; }
+}
+async function dbSetScore(tid, sid, ci, ii, selfScore, adminScore, richoScore) {
+  const id = `${tid}__${sid}__${ci}__${ii}`;
+  const body = { id, trainee_id: tid, sheet_id: sid, cat_index: ci, item_index: ii, updated_at: new Date().toISOString() };
+  if (selfScore !== undefined) body.self_score = selfScore;
+  if (adminScore !== undefined) body.admin_score = adminScore;
+  if (richoScore !== undefined) body.rijicho_score = richoScore;
+  await sbFetch('/rest/v1/scores', {
+    method: 'POST',
+    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify(body)
+  });
+}
+
+// ============================================================
+// ██████╗  █████╗ ████████╗ █████╗
+// ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗
+// ██║  ██║███████║   ██║   ███████║
+// ██║  ██║██╔══██║   ██║   ██╔══██║
+// ██████╔╝██║  ██║   ██║   ██║  ██║
+// ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
+//
+// ★ Claudeへの編集ガイド ★
+// ─────────────────────────────────────────────────────────────
+// 【衛生士名を変更】→ TRAINEES 配列を編集
+//   例: name: '田中 花子', trainer: '山田 DH', joined: '2025年4月'
+//
+// 【項目を追加・変更】→ SHEETS 配列の該当 items を編集
+//   例: items: ['新しい項目を追加', '...']
+//
+// 【カテゴリを追加】→ categories 配列に追記
+//   例: { name: '新カテゴリ名', items: ['項目1', '項目2'] }
+//
+// 【シートを追加】→ SHEETS 配列に新しいオブジェクトを追記
+//   id は 's8', 's9'... と一意にすること
+// ─────────────────────────────────────────────────────────────
+
+// ============================================================
+// 衛生士一覧（ここを編集してください）
+// ============================================================
+const DEFAULT_TRAINEES = [
+  { id: 't1', name: '山田 さくら', initials: '山田', joined: '2024年4月', trainer: '部門長' },
+  { id: 't2', name: '佐藤 みく',   initials: '佐藤', joined: '2024年4月', trainer: '部門長' },
+  { id: 't3', name: '中村 あおい', initials: '中村', joined: '2024年10月', trainer: '部門長' }
+];
+
+// ============================================================
+// チェックシートデータ（ここを編集してください）
+// ============================================================
+const DEFAULT_SHEETS = [
+  {
+    id: 's1', title: 'チェックシート①', subtitle: '挨拶・患者対応・カルテ・口腔内写真',
+    categories: [
+      { name: '挨拶 身だしなみ', items: ['挨拶／言繋づかい／敬語等医療従事者としての基本が身についている','スタッフ間の挨拶が自ら出来る','医療従事者としての身だしなみが整っている'] },
+      { name: '患者対応', items: ['誘導前にチェアの準備（治療準備）がすべてできる（パノラマ/基本セット/カルテ確認まで）','全ての患者さんに笑顔で元気よく対応ができる','患者さんをユニットへ誘導できる','体の不自由な患者さんに対して配慮できる','治療内容について患者さんへ説明ができる','専門用語を使わずに説明ができる','患者さんが通いたい/通わなくては！と思えるような説明ができる','時間通りに誘導できる','患者さんの歯科に対する意識を上げるような説明ができる','患者さんの隠れた主訴を見つけ、くみ取ることができる','周囲に気配りができる','患者さんに上手く伝えることができるか意識して考え、ツールなどを利用して提案することができる','臨機応変に対応できる','初診の問診・カウンセリングが時間内にでき処置がおこなえる','再初診の問診が時間内にでき処置がおこなえる'] },
+      { name: 'カルテ', items: ['トリートメントプランの記載・読解できる','口腔内チェック/P検の記載後のトリートメントプランへの各チェックができる','記載/検査記録/補助録などの重要性を理解できる','専門用語を理解し記録から治療や管理の経過を把握することができる','他のスタッフが見ても分かり易く整理された補助録作成と共有ができる','情報を整理し重要事項を漏らさずポイントを押さえた記録ができる'] },
+      { name: '口腔内写真', items: ['隣のチェアへの配慮ができる','撮影方法を教えてもらう','口腔内写真をパソコンに読み込む事ができる','口腔内写真に合格できた（5分以内に規格通り正しく撮影できる）','スムーズに撮影できる','口腔内写真を見て患者さんに説明できる','撮影方法を指導できる','写真を撮る意味を伝えることができる'] }
+    ]
+  },
+  {
+    id: 's2', title: 'チェックシート②', subtitle: 'アポイント・レントゲン・治療基礎',
+    categories: [
+      { name: 'アポイント', items: ['ユニット案内前にパントモを表示案内後、診のマークを付けることができる','アポツールの見方と操作方法がわかる','守秘義務を理解している','アポツールで担当患者さんの次回の予約を取ることができる','Drの治療/カウンセリング／P処置の予約を取ることができる','必要なコメントをアポツールに入れることができる','治療内容によって予約を振り分けることができる'] },
+      { name: 'デンタル・パノラマ', items: ['被ばく線量が理解でき、ツールを使用し説明できる','レントゲンの種類を理解し正しくモニターに出すことができる','デンタルのセッティング/位置/保存/使用後の片づけができる','パントモのセッティング/位置/保存ができる','デンタル/パントモを規格通りに撮影準備できる','デンタル/パントモの読影ができ、患者さんへ説明することができる'] },
+      { name: 'CT', items: ['CT撮影の注意点/説明が理解できている','モニターにCT画像を正しく出すことができる','CT撮影準備/位置/保存ができる','CT画像を患者さんへ説明できる','他のスタッフへの指導/アドバイスができる'] },
+      { name: '麻酔', items: ['トリートメントプランを確認し麻酔の準備ができる','説明→OAまで準備/アシスタントができる'] },
+      { name: 'CR', items: ['CRの準備/説明/アシスタントができる'] },
+      { name: '圧排', items: ['圧排の意味と方法を理解している','処置に必要な器具準備できる','圧排ができる','複数歯でもスピーディーに圧排できる','歯根近接や薄い歯肉の圧排ができる','他のスタッフへの指導/アドバイスができる'] },
+      { name: '単治', items: ['準備ができる','単純窩洞の充填ができる','複雑窩洞の充填ができる','他のスタッフへの指導/アドバイスができる'] }
+    ]
+  },
+  {
+    id: 's3', title: 'チェックシート③', subtitle: '根管治療・抜歯・補綴',
+    categories: [
+      { name: 'PE', items: ['浸麻→P-ext/除去してRCT→Crセットまでの流れを理解できている','P-extで使用する器具・薬品を準備でき治療の流れを理解できている','P-extの準備/治療説明/アシスタントが一人でできる','P-ext治療後の偶発症状について説明できる'] },
+      { name: 'RCT', items: ['RCTの準備/治療説明/アシスタントができる'] },
+      { name: 'RCF', items: ['RCFの準備/治療説明/アシスタントができる','RCFの治療後の注意事項/偶発症状が理解でき説明できる'] },
+      { name: '根治共通', items: ['各処置後の次回の予定が理解できている'] },
+      { name: 'EXT', items: ['EXT準備/処置前説明・体調確認・治療説明・同意書/アシスタントができる','EXT後の注意事項/投薬説明ができる'] },
+      { name: 'SP/抜歯', items: ['SP/抜糸のアシスタントができる'] },
+      { name: 'ドライソケット', items: ['ドライソケットについて理解し説明することができる','ドライソケット処置の準備/アシスタントができる'] },
+      { name: '補綴', items: ['アルジネートの練和ができる','印象材を正しく計量し、適切な印象材を練ることができる','印象硬化待ち中の患者さんへ配慮ができる','片顎印象ができる','治療内容によって印象材を判断することができる（アルジネート/シリコン/スキャニング）','全顎印象ができる','全ての印象がミスなく採得できミスに対し対応することができる','補綴の種類が理解できている','補綴の種類について特徴含め説明することができる'] }
+    ]
+  },
+  {
+    id: 's4', title: 'チェックシート④', subtitle: 'インレー・クラウン・デンチャー',
+    categories: [
+      { name: 'In imp', items: ['In kp impの準備/治療説明/アシスタント/トレー選択ができる','アルジネートで対合impができる','アルジネート・寒天で本印象/ワックスBTがとれる','デュラシール・フィットシール・クイックフロー仮封ができる','治療後の説明/注意事項/次回説明/set金額が伝えられる'] },
+      { name: 'In set', items: ['In setの準備/アシスタント/set後の注意の説明ができる','複雑窩洞の試適ができる','再製の判断ができる','Drの指示で調整できる','セメントアウトできる'] },
+      { name: 'FMC/CAD・前装MC・Br imp', items: ['FMC/CADCAM/前装MC/Bz pz impの準備/治療説明/アシストができる','片顎/全顎トレー選択し対合impをとることができる','アルジネート・寒天で本印象/ワックスBTがとれる','Tecをリムーバーで外すことができる','Tec仮着ができる','Tecのウォッシュができる','治療後の説明/注意事項/次回説明/set金額が伝えられる','補助録へのFMC/CADCAM/前装MC/Br impの記載ができる'] },
+      { name: 'Cr set', items: ['Setのアシスタント、set後の注意事項の説明ができる','セメントアウトできる'] },
+      { name: 'Cr 共通', items: ['単治/仮封（デュラシール・フィットシール・クイックフロー・キャビトン）/Tecウォッシュを他のスタッフへ指導/アドバイスができる'] },
+      { name: 'デンチャー', items: ['PD/FD Setまでの流れが理解し説明できる'] },
+      { name: 'デンチャー imp', items: ['デンチャー概形impが出来る（個人トレー）','精密impの準備・説明・アシスタントができる'] },
+      { name: 'BT', items: ['BTの準備/説明/アシスタントができる'] },
+      { name: 'TF', items: ['TFの準備/説明/アシスタントができる'] },
+      { name: 'デンチャー Set', items: ['Setの準備・説明・アシスタントができる','Set後の取り扱い/注意事項/お手入れについて説明ができる'] }
+    ]
+  },
+  {
+    id: 's5', title: 'チェックシート⑤', subtitle: '義歯・シーラント・自費・ホワイトニング',
+    categories: [
+      { name: '義歯調整', items: ['デンチャー調整の準備/アシスタントができる'] },
+      { name: 'ナイトガード', items: ['ナイトガードの必要性/作製手順を理解している'] },
+      { name: 'ナイトガード imp', items: ['ナイトガードimp（全顎）ができる','オプテックへのナイトガードimpの入力ができる'] },
+      { name: 'ナイトガード set', items: ['ナイトガードの取り扱い/注意事項/お手入れについて説明できる','オプテックへナイトガードsetの入力ができる'] },
+      { name: 'シーラント', items: ['シーラントの効果を理解でき必要性を説明できる','シーラント処置ができる','シーラント処置後の説明・注意点を説明できる（保護者に）','非協力児に対してもシーラント処置ができる','仕上げ磨きを含めた口腔衛生状態や歯牙形態からシーラントの必要があるか判断できる'] },
+      { name: '自費補綴', items: ['補綴の種類/特徴について理解できている','自費補綴についてカウンセリングすることができる','オプテックで見積もりを作成できる','自費カルテの内容把握/記載ができる','患者さんへ自費補綴setの金額説明をすることができる'] },
+      { name: 'ファイバーコア', items: ['ファイバーコア築造の準備・説明・アシスタントができる'] },
+      { name: 'セラミックインレー', items: ['セラミックIn kp impの準備・説明・アシスタントができる'] },
+      { name: 'セラミッククラウン', items: ['セラミックCK kp impの準備・説明・アシスタントができる'] },
+      { name: 'iTero', items: ['スキャニングの設定ができる','必要性が理解でき説明できる','スキャニングできる','スキャンデータを患者さんへ見せて説明できる','他のスタッフへ指導/アドバイスができる'] },
+      { name: 'ホワイトニング', items: ['ホワイトニング/漂白のメカニズムと施術を理解している','ホワイトスポット/パンディング/クラック/テトラサイクリンで変色が認識できる','オフィス/ホームホワイトニングの内容・金額を理解できている','ホワイトニング希望の患者さんへカウンセリングができる','手順・注意事項を理解した上で施術できる','希望されていない患者さんにも提案/おすすめができる','Hysの強い患者さんへの対応ができる'] }
+    ]
+  },
+  {
+    id: 's6', title: 'チェックシート⑥', subtitle: '歯周病精密検査・唾液検査・治療計画',
+    categories: [
+      { name: 'P（精密検査）', items: ['Pの流れを患者に説明できる','基本の検診・SPTの内容を把握できている','Pの流れ・保険のルールが理解できている','P検の記載ができる（1点・6点）','レントゲンを読影できる','歯周病についてツールを使用し説明することができる','歯周組織の病状について理解している','検査目的と方法を理解している','6点法にてP検査できる','病状の説明ができ、治療法を含め治療の流れを説明できる','全身疾患について説明できる','個々の患者さんの病状や生活背景に沿って必要な情報を提供できる','患者さんのモチベーションを上げることができる','生活習慣・食生活の指導ができる','他のスタッフへの指導・アドバイスができる'] },
+      { name: '唾液検査', items: ['カリエスの成り立ちを理解している','各検査を選び、患者さんに勧めることができる','SMT・オルコアの手順が分かる','SMT・オルコアの検査を行うことができる','データから正しい知識を患者さんに伝えることができる','検査をもとに、歯磨き指導・食事指導など患者さんにあった指導ができる','他のスタッフへの指導・アドバイスができ、トラブルに対応できる'] },
+      { name: '歯周病の治療計画立案・説明', items: ['初期治療の処置の流れを理解している','Drや先輩DHと相談しながら治療計画を立案することができる','患者さんに正しい知識と治療計画を伝えることができる','自分で治療計画を立案することができる','個々の患者さんに応じた全身疾患を含めた歯周病の説明ができる','Drの治療計画および方針とほぼ一致した治療計画とメンテナンス計画を立案できる','自費治療を含めた最良の治療提案ができる','他のスタッフへの指導/アドバイスができる'] }
+    ]
+  },
+  {
+    id: 's7', title: 'チェックシート⑦', subtitle: '保険指導・歯周治療・PMTC',
+    categories: [
+      { name: '保険指導', items: ['口腔内チェック/検査をもとに治療計画についてカウンセリングできる','基本的な知識のもと、典型的・初歩的な説明ができる','赤染・磨き方の手法・ホームケア用品を理解している','患者さんの口腔内状態に応じて指導内容を変えることができる','患者さんの食習慣・嗜好について聞き出し、応じた指導ができる','患者さんの口腔内状態に応じてホームケア用品を紹介できる','患者さんの性格を把握し、それぞれに合った適切な保険指導ができる','患者さんに積極的に協力してもらえるよう指導できる','非協力的な患者さんにも理解・納得して健康意識を変えることができる','食育に積極的に取り組んでいる','他のスタッフへの指導・アドバイスができる'] },
+      { name: '歯周治療', items: ['ユリー/コントラでプラーク除去・ポリッシングができる','SCが出来る（バリオス・手用スケーラー使用できる）','超音波スケーラーの使い方/チップの形態が理解できている①','歯石の有無を確認でき、縁上歯石を除去することができる①','歯周ポケット4mmまでの縁下歯石除去ができる②','シャープニングができる②','キュレットを操作することができる②','歯周ポケット4mm以上のSRPができる③','重度歯周病患者さんの対応ができる④','③までクリアしたスタッフのチェックができる'] },
+      { name: 'PMTC・メンテナンス', items: ['メンテナンス継続の必要性と効果を理解し伝えることができる','リコールの流れが把握でき、行うことができる','どのメニューを勧めるか患者さんに合わせ判断できる（SPTか検診）','患者さんと信頼関係を築くことができ、より良い提案ができる','口腔内の異常を発見することができ、迅速に対応することができる','咬合状態のチェックをし異常に気付くことができる','他のスタッフへの指導・アドバイスができる','保険/自費のカルテを読むことができる','オプテックへP関係の入力ができる','保険の流れに沿って入力でき、ミスがないようになる','他のスタッフへの指導・アドバイスができる'] }
+    ]
+  },
+  {
+    id: 's8', title: 'チェックシート⑧', subtitle: 'オプテックの入力',
+    categories: [
+      { name: 'オプテックの入力', items: ['初診の入力と文章提供の記入ができる','再初診の入力と歯診記入と文章提供ができる','基本・精密検査の入力ができる','SRPの入力を正しくできる','P重防・SPTの入力ができる','グセ充年齢を正しく理解し入力できる','シーラントの適応年齢を正しく理解し入力できる','Ce・う蝕多発傾向が理解し入力できる','2,6歳以下・以上の入力ができる','NG impが正しく入力できる','パノラマ・口写が正しく入力できる','アフタゾロンを理解し入力できる'] }
+    ]
+  }
+];
+// ============================================================
+// ここまでがデータ定義
+// ============================================================
+
+// ===== RUNTIME STATE =====
+let TRAINEES, SHEETS_DATA;
+const scores = {}; // scores[tid][sid][ci][ii] = 0-5
+let dbReady = false;
+
+async function loadAll() {
+  // まずデフォルトで起動（表示を速くするため）
+  TRAINEES = JSON.parse(JSON.stringify(DEFAULT_TRAINEES));
+  SHEETS_DATA = JSON.parse(JSON.stringify(DEFAULT_SHEETS));
+
+  try {
+    showLoadingBanner('Supabaseからデータを読み込み中...');
+    const [traineesSetting, sheetsSetting, dbScores] = await Promise.all([
+      dbGetSetting('trainees'),
+      dbGetSetting('sheets'),
+      dbGetAllScores()
+    ]);
+    if (traineesSetting) TRAINEES = traineesSetting;
+    if (sheetsSetting) SHEETS_DATA = sheetsSetting;
+    Object.assign(scores, dbScores);
+    dbReady = true;
+    hideLoadingBanner();
+  } catch(e) {
+    hideLoadingBanner();
+    showErrorBanner('オフラインモード：データの同期ができませんでした');
+    console.error(e);
+  }
+}
+
+async function saveAll() {
+  // ローカルにも保存（オフライン対応）
+  localStorage.setItem('skillcheck_v3_cache', JSON.stringify({ trainees: TRAINEES, sheets: SHEETS_DATA }));
+  if (!dbReady) return;
+  try {
+    await Promise.all([
+      dbSetSetting('trainees', TRAINEES),
+      dbSetSetting('sheets', SHEETS_DATA)
+    ]);
+  } catch(e) { console.error('save error', e); }
+}
+
+function showLoadingBanner(msg) {
+  let el = document.getElementById('sync-banner');
+  if (!el) { el = document.createElement('div'); el.id='sync-banner'; el.style.cssText='position:fixed;top:56px;left:0;right:0;background:#3d6b8c;color:#fff;text-align:center;padding:6px;font-size:13px;z-index:200'; document.body.appendChild(el); }
+  el.textContent = msg; el.style.display='block';
+}
+function hideLoadingBanner() { const el=document.getElementById('sync-banner'); if(el) el.style.display='none'; }
+function showErrorBanner(msg) {
+  let el = document.getElementById('sync-banner');
+  if (!el) { el = document.createElement('div'); el.id='sync-banner'; el.style.cssText='position:fixed;top:56px;left:0;right:0;text-align:center;padding:6px;font-size:13px;z-index:200'; document.body.appendChild(el); }
+  el.style.background='#854f0b'; el.style.color='#fff'; el.textContent=msg; el.style.display='block';
+  setTimeout(() => { el.style.display='none'; }, 4000);
+}
+
+// ===== SCORE HELPERS =====
+function getSelfScore(tid, sid, ci, ii) {
+  try { return scores[tid][sid][ci][ii]?.self || 0; } catch(e) { return 0; }
+}
+function getAdminScore(tid, sid, ci, ii) {
+  try { return scores[tid][sid][ci][ii]?.admin || 0; } catch(e) { return 0; }
+}
+function getRijichoScore(tid, sid, ci, ii) {
+  try { return scores[tid][sid][ci][ii]?.rijicho || 0; } catch(e) { return 0; }
+}
+function setScoreData(tid, sid, ci, ii, type, val) {
+  if (!scores[tid]) scores[tid] = {};
+  if (!scores[tid][sid]) scores[tid][sid] = {};
+  if (!scores[tid][sid][ci]) scores[tid][sid][ci] = {};
+  if (!scores[tid][sid][ci][ii]) scores[tid][sid][ci][ii] = { self: 0, admin: 0, rijicho: 0 };
+  scores[tid][sid][ci][ii][type] = val;
+  saveAll();
+}
+function calcItemScore(self, admin, rijicho) {
+  // 入力されているスコアの平均
+  const vals = [self, admin, rijicho].filter(v => v > 0);
+  return vals.length ? vals.reduce((a,b)=>a+b,0) / vals.length : 0;
+}
+function sheetPct(tid, sid) {
+  const s = SHEETS_DATA.find(x => x.id === sid); if (!s) return 0;
+  let totalMax = 0, totalScore = 0;
+  s.categories.forEach((c,ci) => c.items.forEach((_,ii) => {
+    totalMax += 5;
+    totalScore += calcItemScore(getSelfScore(tid,sid,ci,ii), getAdminScore(tid,sid,ci,ii), getRijichoScore(tid,sid,ci,ii));
+  }));
+  return totalMax ? Math.round(totalScore / totalMax * 100) : 0;
+}
+function totalPct(tid) {
+  let totalMax = 0, totalScore = 0;
+  SHEETS_DATA.forEach(s => s.categories.forEach((c,ci) => c.items.forEach((_,ii) => {
+    totalMax += 5;
+    totalScore += calcItemScore(getSelfScore(tid,s.id,ci,ii), getAdminScore(tid,s.id,ci,ii), getRijichoScore(tid,s.id,ci,ii));
+  })));
+  return totalMax ? Math.round(totalScore / totalMax * 100) : 0;
+}
+function pCol(p) { return p>=70?'var(--green)':p>=40?'var(--amber)':'var(--red)'; }
+function pFill(p) { return p>=70?'fill-green':p>=40?'fill-amber':'fill-red'; }
+function initials(name) { const parts = name.split(/\s+/); return parts[0]?.slice(0,2)||name.slice(0,2); }
+
+// ===== VIEW STATE =====
+let currentView = 'trainee';
+let currentTrainee = null;
+let currentSheet = null;
+let adminSelected = null;
+let settingsSheet = null;
+let userMode = null; // 'trainee' | 'admin'
+let isMobile = window.innerWidth < 640;
+
+// 画面サイズ変化を監視
+window.addEventListener('resize', () => {
+  const wasMobile = isMobile;
+  isMobile = window.innerWidth < 640;
+  if (wasMobile !== isMobile && userMode) applyLayout();
+});
+
+function applyLayout() {
+  document.body.classList.toggle('is-mobile', isMobile);
+  document.body.classList.toggle('is-desktop', !isMobile);
+}
+
+// ===== ログイン画面 =====
+function renderLogin() {
+  document.getElementById('app-root').innerHTML = `
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:var(--bg)">
+      <div style="width:100%;max-width:360px">
+        <div style="text-align:center;margin-bottom:32px">
+          <div style="font-size:32px;margin-bottom:8px">🦷</div>
+          <div style="font-size:20px;font-weight:700;color:var(--text)">つなしまファミリー歯科</div>
+          <div style="font-size:13px;color:var(--text3);margin-top:4px">衛生士スキルチェックシート</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <button onclick="enterAs('trainee')" style="padding:18px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px">
+            <span style="font-size:22px">🩺</span> 衛生士としてログイン
+          </button>
+          <button onclick="enterAs('admin')" style="padding:18px;background:var(--surface);color:var(--text);border:1px solid var(--border2);border-radius:var(--radius);font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px">
+            <span style="font-size:22px">📊</span> 教育者としてログイン
+          </button>
+        </div>
+        <div style="text-align:center;margin-top:20px;font-size:12px;color:var(--text3)">
+          使用するロールを選んでください
+        </div>
+      </div>
+    </div>`;
+}
+
+function enterAs(mode) {
+  if (mode === 'admin') {
+    const pw = prompt('教育者パスワードを入力してください');
+    if (pw !== 'dental8020') {
+      alert('パスワードが違います');
+      return;
+    }
+  }
+  userMode = mode;
+  localStorage.setItem('skillcheck_mode', mode);
+  applyLayout();
+  buildApp();
+}
+
+function buildApp() {
+  if (userMode === 'trainee') {
+    // 新人：自分の進捗のみ（衛生士選択→自分のページ）
+    document.getElementById('app-root').innerHTML = `
+      <div class="app">
+        <div class="topbar">
+          <div class="topbar-logo">つなしまファミリー歯科 <span>スキルチェック</span></div>
+          <button onclick="logout()" style="margin-left:auto;background:transparent;border:none;font-size:12px;color:var(--text3);cursor:pointer;padding:4px 8px">ログアウト</button>
+        </div>
+        <div class="content" id="trainee-content"></div>
+        <nav class="bottom-nav desktop-hide">
+          <button class="nav-btn active" id="nav-my">
+            <span class="nav-icon">🩺</span>進捗
+          </button>
+        </nav>
+      </div>
+      <div class="toast" id="toast"></div>`;
+    renderTraineeLogin();
+  } else {
+    // 教育者：全機能
+    document.getElementById('app-root').innerHTML = `
+      <div class="app">
+        <div class="topbar">
+          <div class="topbar-logo">つなしまファミリー歯科 <span>衛生士スキルチェック</span></div>
+          <button onclick="logout()" style="margin-left:auto;background:transparent;border:none;font-size:12px;color:var(--text3);cursor:pointer;padding:4px 8px">ログアウト</button>
+          <div id="desktop-tabs" style="display:none;gap:6px;margin-left:8px">
+            <button class="view-btn active" id="dtab-trainee" onclick="switchView('trainee')">衛生士</button>
+            <button class="view-btn" id="dtab-admin" onclick="switchView('admin')">教育者</button>
+            <button class="view-btn" id="dtab-settings" onclick="switchView('settings')">⚙ 設定</button>
+          </div>
+        </div>
+        <div id="desktop-main" style="display:none;flex:1;overflow:hidden">
+          <div class="sidebar" id="sidebar"></div>
+          <div class="content">
+            <div class="view active" id="view-trainee"></div>
+            <div class="view" id="view-admin"></div>
+            <div class="view" id="view-settings"></div>
+          </div>
+        </div>
+        <div id="mobile-content" style="flex:1;overflow-y:auto;padding:16px;padding-bottom:80px;display:none"></div>
+        <nav id="mobile-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);z-index:100;padding-bottom:env(safe-area-inset-bottom)">
+          <div style="display:flex">
+            <button class="nav-btn active" id="nav-trainee" onclick="switchView('trainee')">
+              <span class="nav-icon">🩺</span>衛生士
+            </button>
+            <button class="nav-btn" id="nav-admin" onclick="switchView('admin')">
+              <span class="nav-icon">📊</span>教育者
+            </button>
+            <button class="nav-btn" id="nav-settings" onclick="switchView('settings')">
+              <span class="nav-icon">⚙️</span>設定
+            </button>
+          </div>
+        </nav>
+      </div>
+      <div class="toast" id="toast"></div>`;
+    currentView = 'trainee';
+    if (!currentTrainee) currentTrainee = TRAINEES[0]?.id;
+    if (!currentSheet) currentSheet = SHEETS_DATA[0]?.id;
+    renderSidebar();
+    renderAdminMainView();
+  }
+}
+
+function logout() {
+  userMode = null;
+  localStorage.removeItem('skillcheck_mode');
+  renderLogin();
+}
+
+// ===== 新人ログイン（自分を選ぶ画面） =====
+function renderTraineeLogin() {
+  if (currentTrainee) { renderMyProgress(); return; }
+  let h = `<div style="padding-top:16px">
+    <div style="font-size:16px;font-weight:600;margin-bottom:4px">あなたは誰ですか？</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:20px">名前を選んでください</div>
+    <div style="display:flex;flex-direction:column;gap:10px">`;
+  TRAINEES.forEach(t => {
+    h += `<button onclick="selectSelf('${t.id}')" style="display:flex;align-items:center;gap:14px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;font-family:inherit;text-align:left;width:100%">
+      <div style="width:44px;height:44px;border-radius:50%;background:var(--purple-bg);color:var(--purple);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${initials(t.name)}</div>
+      <div>
+        <div style="font-size:16px;font-weight:600;color:var(--text)">${t.name}</div>
+        <div style="font-size:12px;color:var(--text3)">${t.joined}入社｜担当：${t.trainer}</div>
+      </div>
+    </button>`;
+  });
+  h += '</div></div>';
+  document.getElementById('trainee-content').innerHTML = h;
+}
+
+function selectSelf(tid) {
+  currentTrainee = tid;
+  currentSheet = SHEETS_DATA[0]?.id;
+  renderMyProgress();
+}
+
+// ===== 新人の進捗ページ（自分だけ） =====
+function renderMyProgress() {
+  const t = TRAINEES.find(x=>x.id===currentTrainee);
+  if (!t) { renderTraineeLogin(); return; }
+  const overall = totalPct(currentTrainee);
+  let totItems=0, doneItems=0;
+  SHEETS_DATA.forEach(s=>s.categories.forEach((c,ci)=>c.items.forEach((_,ii)=>{ totItems++; if(getSelfScore(currentTrainee,s.id,ci,ii)>=3) doneItems++; })));
+
+  let h = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <div style="width:40px;height:40px;border-radius:50%;background:var(--purple-bg);color:var(--purple);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">${initials(t.name)}</div>
+    <div>
+      <div style="font-weight:600;font-size:16px">${t.name}</div>
+      <div style="font-size:12px;color:var(--text3)">${t.joined}入社｜担当：${t.trainer}</div>
+    </div>
+    <button onclick="currentTrainee=null;renderTraineeLogin()" style="margin-left:auto;background:transparent;border:1px solid var(--border2);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--text2);cursor:pointer">変更</button>
+  </div>
+  <div class="summary-card">
+    <div class="summary-name">全体進捗</div>
+    <div class="summary-pct">${overall}%</div>
+    <div class="summary-sub">${doneItems} / ${totItems} 項目を習得済み</div>
+    <div class="summary-bar"><div class="summary-bar-fill" style="width:${overall}%"></div></div>
+  </div>
+  <div class="sheet-scroll">`;
+  SHEETS_DATA.forEach(s => {
+    const p = sheetPct(currentTrainee, s.id);
+    h += `<button class="sheet-chip ${s.id===currentSheet?'active':''}" onclick="currentSheet='${s.id}';renderMyProgress()">${s.title} ${p}%</button>`;
+  });
+  h += '</div>';
+
+  const sheet = SHEETS_DATA.find(s=>s.id===currentSheet);
+  h += `<div style="color:var(--text3);font-size:12px;margin-bottom:10px">${sheet.subtitle}</div>`;
+
+  sheet.categories.forEach((cat, ci) => {
+    let cDone=0;
+    cat.items.forEach((_,ii) => { if(getSelfScore(currentTrainee,currentSheet,ci,ii)>=3) cDone++; });
+    const cp = Math.round(cDone/cat.items.length*100);
+    h += `<div class="cat-card" id="mcat-${ci}">
+      <div class="cat-header" onclick="toggleMyCat(${ci})">
+        <div class="cat-name">${cat.name}</div>
+        <div class="cat-bar-wrap"><div class="cat-bar"><div class="cat-bar-fill" id="mcb-${ci}" style="width:${cp}%"></div></div></div>
+        <div class="cat-pct" id="mcp-${ci}">${cp}%</div>
+        <div class="cat-chevron">▼</div>
+      </div>
+      <div class="cat-body">`;
+    cat.items.forEach((item, ii) => {
+      const self = getSelfScore(currentTrainee, currentSheet, ci, ii);
+      const admin = getAdminScore(currentTrainee, currentSheet, ci, ii);
+      h += `<div class="task-item">
+        <div class="task-top">
+          <div class="task-num">${ii+1}</div>
+          <div class="task-text ${self>=5?'done':''}" id="mtt-${ci}-${ii}">${item}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:10px;color:var(--accent);font-weight:600;min-width:44px">自己評価</span>
+            <div class="stars" id="mst-${ci}-${ii}">`;
+      for(let n=1;n<=5;n++) h += `<div class="star self-star ${self>=n?'active':''}" onclick="setMyScore(${ci},${ii},${n})">${n}</div>`;
+      h += `</div></div>`;
+      if (admin > 0) {
+        h += `<div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:10px;color:var(--green);font-weight:600;min-width:44px">教育者</span>
+            <div style="display:flex;gap:4px">`;
+        for(let n=1;n<=5;n++) h += `<div class="star admin-star-disp ${admin>=n?'admin-active':''}">${n}</div>`;
+        h += `</div></div>`;
+      }
+      h += `</div></div>`;
+    });
+    h += '</div></div>';
+  });
+
+  const el = document.getElementById('trainee-content');
+  if (el) el.innerHTML = h;
+}
+
+function setMyScore(ci, ii, val) {
+  const cur = getSelfScore(currentTrainee, currentSheet, ci, ii);
+  const nv = cur === val ? val-1 : val;
+  setScoreData(currentTrainee, currentSheet, ci, ii, 'self', nv);
+  dbSetScore(currentTrainee, currentSheet, ci, ii, nv, undefined).catch(()=>{});
+  const stars = document.getElementById(`mst-${ci}-${ii}`);
+  if (stars) stars.querySelectorAll('.star').forEach((el,i) => el.className='star self-star'+(nv>=i+1?' active':''));
+  const tt = document.getElementById(`mtt-${ci}-${ii}`);
+  if (tt) tt.className = 'task-text'+(nv>=5?' done':'');
+  // カテゴリバー更新
+  const sheet = SHEETS_DATA.find(s=>s.id===currentSheet);
+  const cat = sheet.categories[ci];
+  let totalScore=0; cat.items.forEach((_,i)=>{ const s=getSelfScore(currentTrainee,currentSheet,ci,i); const a=getAdminScore(currentTrainee,currentSheet,ci,i); totalScore += a>0?Math.round((s+a)/2):s; });
+  const cp = Math.round(totalScore/(cat.items.length*5)*100);
+  const cb = document.getElementById(`mcb-${ci}`); if(cb) cb.style.width=cp+'%';
+  const cpEl = document.getElementById(`mcp-${ci}`); if(cpEl) cpEl.textContent=cp+'%';
+}
+
+function toggleMyCat(ci) { const el=document.getElementById(`mcat-${ci}`); if(el) el.classList.toggle('collapsed'); }
+
+// ===== 教育者モード：PCとスマホで切替 =====
+function renderAdminMainView() {
+  const dm = document.getElementById('desktop-main');
+  const mc = document.getElementById('mobile-content');
+  const dt = document.getElementById('desktop-tabs');
+  const mn = document.getElementById('mobile-nav');
+
+  if (isMobile) {
+    if (dm) dm.style.display = 'none';
+    if (dt) dt.style.display = 'none';
+    if (mc) mc.style.display = 'block';
+    if (mn) mn.style.display = 'block';
+    renderMobileView();
+  } else {
+    if (dm) { dm.style.display = 'flex'; dm.style.flex = '1'; dm.style.overflow = 'hidden'; }
+    if (dt) dt.style.display = 'flex';
+    if (mc) mc.style.display = 'none';
+    if (mn) mn.style.display = 'none';
+    renderSidebar();
+    renderDesktopView();
+  }
+}
+
+function renderDesktopView() {
+  if (currentView === 'trainee') renderTraineeView();
+  else if (currentView === 'admin') renderAdminView();
+  else if (currentView === 'settings') renderSettingsView();
+}
+
+function renderMobileView() {
+  const mc = document.getElementById('mobile-content');
+  if (!mc) return;
+  // スマホ用：mobile-contentにビューを動的描画
+  let viewHtml = '';
+  if (currentView === 'trainee') {
+    mc.innerHTML = '<div id="view-trainee" class="view active"></div>';
+    renderTraineeView();
+  } else if (currentView === 'admin') {
+    mc.innerHTML = '<div id="view-admin" class="view active"></div>';
+    renderAdminView();
+  } else if (currentView === 'settings') {
+    mc.innerHTML = '<div id="view-settings" class="view active"></div>';
+    renderSettingsView();
+  }
+}
+
+function switchView(v) {
+  currentView = v;
+  // デスクトップタブ更新
+  ['trainee','admin','settings'].forEach(tab => {
+    const el = document.getElementById('dtab-'+tab);
+    if (el) el.className = 'view-btn' + (tab===v?' active':'');
+  });
+  // モバイルナビ更新
+  ['trainee','admin','settings'].forEach(tab => {
+    const el = document.getElementById('nav-'+tab);
+    if (el) el.className = 'nav-btn' + (tab===v?' active':'');
+  });
+  renderAdminMainView();
+}
+
+// ===== SIDEBAR（PC用） =====
+function renderSidebar() {
+  const el = document.getElementById('sidebar');
+  if (!el) return;
+  if (currentView === 'settings') { el.innerHTML = ''; return; }
+  if (currentView === 'trainee') {
+    let h = '<div class="sb-section">衛生士</div>';
+    TRAINEES.forEach(t => {
+      const p = totalPct(t.id);
+      h += `<div class="sb-item ${t.id===currentTrainee?'active':''}" onclick="selTrainee('${t.id}')">
+        <span>${t.name}</span>
+        <span class="sb-pct" style="color:${pCol(p)}">${p}%</span>
+      </div>`;
+    });
+    el.innerHTML = h;
+  } else {
+    el.innerHTML = '<div class="sb-section">全体管理</div><div class="sb-item active">ダッシュボード</div>';
+  }
+}
+
+// ===== TRAINEE VIEW =====
+function renderTraineeView() {
+  if (!currentTrainee || !TRAINEES.find(t=>t.id===currentTrainee)) currentTrainee = TRAINEES[0]?.id;
+  if (!currentSheet || !SHEETS_DATA.find(s=>s.id===currentSheet)) currentSheet = SHEETS_DATA[0]?.id;
+  const t = TRAINEES.find(x=>x.id===currentTrainee);
+  const overall = totalPct(currentTrainee);
+  let totItems=0, doneItems=0;
+  SHEETS_DATA.forEach(s=>s.categories.forEach((c,ci)=>c.items.forEach((_,ii)=>{ totItems++; if(getSelfScore(currentTrainee,s.id,ci,ii)>=3) doneItems++; })));
+
+  // 衛生士セレクター
+  let h = '<div class="trainee-selector">';
+  TRAINEES.forEach(t2 => {
+    const p = totalPct(t2.id);
+    h += `<div class="ts-btn ${t2.id===currentTrainee?'active':''}" onclick="selTrainee('${t2.id}')">
+      <div class="ts-avatar">${initials(t2.name)}</div>
+      <div class="ts-name">${t2.name.split(/\s+/)[0]}</div>
+      <div class="ts-pct" style="color:${pCol(p)}">${p}%</div>
+    </div>`;
+  });
+  h += '</div>';
+
+  // サマリーカード
+  h += `<div class="summary-card">
+    <div class="summary-name">${t.name}｜${t.trainer}</div>
+    <div class="summary-pct">${overall}%</div>
+    <div class="summary-sub">${doneItems} / ${totItems} 項目を習得済み</div>
+    <div class="summary-bar"><div class="summary-bar-fill" style="width:${overall}%"></div></div>
+  </div>`;
+
+  // シートスクロール
+  h += '<div class="sheet-scroll">';
+  SHEETS_DATA.forEach(s => {
+    const p = sheetPct(currentTrainee, s.id);
+    h += `<button class="sheet-chip ${s.id===currentSheet?'active':''}" onclick="selSheet('${s.id}')">${s.title} ${p}%</button>`;
+  });
+  h += '</div>';
+
+  // カテゴリ
+  const sheet = SHEETS_DATA.find(s=>s.id===currentSheet);
+  h += `<div style="color:var(--text3);font-size:12px;margin-bottom:10px">${sheet.subtitle}</div>`;
+
+  sheet.categories.forEach((cat, ci) => {
+    let cDone=0;
+    cat.items.forEach((_,ii) => { if(getSelfScore(currentTrainee,currentSheet,ci,ii)>=3) cDone++; });
+    const cp = Math.round(cDone/cat.items.length*100);
+    h += `<div class="cat-card" id="cat-${ci}">
+      <div class="cat-header" onclick="toggleCat(${ci})">
+        <div class="cat-name">${cat.name}</div>
+        <div class="cat-bar-wrap"><div class="cat-bar"><div class="cat-bar-fill" id="cb-${ci}" style="width:${cp}%"></div></div></div>
+        <div class="cat-pct" id="cp-${ci}">${cp}%</div>
+        <div class="cat-chevron">▼</div>
+      </div>
+      <div class="cat-body">`;
+    cat.items.forEach((item, ii) => {
+      const self = getSelfScore(currentTrainee, currentSheet, ci, ii);
+      const admin = getAdminScore(currentTrainee, currentSheet, ci, ii);
+      const rijicho = getRijichoScore(currentTrainee, currentSheet, ci, ii);
+      h += `<div class="task-item">
+        <div class="task-top">
+          <div class="task-num">${ii+1}</div>
+          <div class="task-text ${calcItemScore(self,admin,rijicho)>=4?'done':''}" id="tt-${ci}-${ii}">${item}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:10px;color:var(--accent);font-weight:600;min-width:44px">自己</span>
+            <div style="display:flex;gap:4px">`;
+      for(let n=1;n<=5;n++) h += `<div class="star self-star ${self>=n?'active':''}" style="cursor:default">${n}</div>`;
+      h += `</div></div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:10px;color:var(--green);font-weight:600;min-width:44px">部門長</span>
+            <div class="stars" id="st-${ci}-${ii}">`;
+      for(let n=1;n<=5;n++) h += `<div class="star admin-star ${admin>=n?'admin-active':''}" onclick="setAdminScore(${ci},${ii},${n})">${n}</div>`;
+      h += `</div></div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:10px;color:var(--purple);font-weight:600;min-width:44px">理事長</span>
+            <div class="stars" id="rt-${ci}-${ii}">`;
+      for(let n=1;n<=5;n++) h += `<div class="star rijicho-star ${rijicho>=n?'rijicho-active':''}" onclick="setRijichoScore(${ci},${ii},${n})">${n}</div>`;
+      h += `</div></div>
+        </div>
+      </div>`;
+    });
+    h += '</div></div>';
+  });
+  document.getElementById('view-trainee').innerHTML = h;
+}
+
+function setAdminScore(ci, ii, val) {
+  const cur = getAdminScore(currentTrainee, currentSheet, ci, ii);
+  const nv = cur === val ? val-1 : val;
+  setScoreData(currentTrainee, currentSheet, ci, ii, 'admin', nv);
+  dbSetScore(currentTrainee, currentSheet, ci, ii, undefined, nv, undefined).catch(()=>{});
+  const stars = document.getElementById(`st-${ci}-${ii}`);
+  if (stars) stars.querySelectorAll('.star').forEach((el,i) => el.className='star admin-star'+(nv>=i+1?' admin-active':''));
+  updateAdminCatBar(ci);
+  renderSidebar();
+}
+function setRijichoScore(ci, ii, val) {
+  const cur = getRijichoScore(currentTrainee, currentSheet, ci, ii);
+  const nv = cur === val ? val-1 : val;
+  setScoreData(currentTrainee, currentSheet, ci, ii, 'rijicho', nv);
+  dbSetScore(currentTrainee, currentSheet, ci, ii, undefined, undefined, nv).catch(()=>{});
+  const stars = document.getElementById(`rt-${ci}-${ii}`);
+  if (stars) stars.querySelectorAll('.star').forEach((el,i) => el.className='star rijicho-star'+(nv>=i+1?' rijicho-active':''));
+  updateAdminCatBar(ci);
+  renderSidebar();
+}
+function updateAdminCatBar(ci) {
+  const sheet = SHEETS_DATA.find(s=>s.id===currentSheet);
+  if (!sheet) return;
+  const cat = sheet.categories[ci];
+  let totalScore=0;
+  cat.items.forEach((_,i)=>{ totalScore += calcItemScore(getSelfScore(currentTrainee,currentSheet,ci,i), getAdminScore(currentTrainee,currentSheet,ci,i), getRijichoScore(currentTrainee,currentSheet,ci,i)); });
+  const cp = Math.round(totalScore/(cat.items.length*5)*100);
+  const cb = document.getElementById(`cb-${ci}`); if(cb) cb.style.width=cp+'%';
+  const cpEl = document.getElementById(`cp-${ci}`); if(cpEl) cpEl.textContent=cp+'%';
+}
+function toggleCat(ci) { const el=document.getElementById(`cat-${ci}`); if(el) el.classList.toggle('collapsed'); }
+function selTrainee(id) { currentTrainee=id; currentSheet=SHEETS_DATA[0]?.id; renderSidebar(); renderTraineeView(); }
+function selSheet(id) { currentSheet=id; renderTraineeView(); }
+
+// ===== ADMIN VIEW =====
+function renderAdminView() {
+  if (!adminSelected || !TRAINEES.find(t=>t.id===adminSelected)) adminSelected = TRAINEES[0]?.id;
+  let h = '<div class="admin-layout"><div class="trainee-cards">';
+  TRAINEES.forEach(t => {
+    const p = totalPct(t.id);
+    h += `<div class="tc ${t.id===adminSelected?'selected':''}" onclick="selAdmin('${t.id}')">
+      <div class="tc-top">
+        <div class="avatar">${initials(t.name)}</div>
+        <div style="flex:1"><div class="tc-name">${t.name}</div><div class="tc-sub">${t.joined}入社</div></div>
+        <div class="tc-pct" style="color:${pCol(p)}">${p}%</div>
+      </div>
+      <div class="overall-bar"><div class="overall-fill ${pFill(p)}" style="width:${p}%"></div></div>
+    </div>`;
+  });
+  h += '</div><div class="detail-panel">';
+  const t = TRAINEES.find(x=>x.id===adminSelected);
+  const p = totalPct(adminSelected);
+  let tot=0,dn=0;
+  SHEETS_DATA.forEach(s=>s.categories.forEach((c,ci)=>c.items.forEach((_,ii)=>{ tot++; if(calcItemScore(getSelfScore(adminSelected,s.id,ci,ii),getAdminScore(adminSelected,s.id,ci,ii),getRijichoScore(adminSelected,s.id,ci,ii))>=4) dn++; })));
+  h += `<div class="detail-top">
+    <div class="avatar" style="width:50px;height:50px;font-size:14px">${initials(t.name)}</div>
+    <div><div class="detail-name">${t.name}</div><div class="detail-sub">${t.joined}入社</div></div>
+    <div style="margin-left:auto;text-align:right">
+      <div style="font-size:26px;font-weight:700;color:${pCol(p)}">${p}%</div>
+      <div style="font-size:12px;color:var(--text2)">${dn} / ${tot} 項目習得</div>
+    </div>
+  </div>`;
+
+  // グラフ：シート別進捗バー
+  h += `<div style="background:var(--surface2);border-radius:var(--radius);padding:14px;margin-bottom:14px">
+    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px">📊 シート別進捗</div>`;
+  SHEETS_DATA.forEach(s => {
+    const sp = sheetPct(adminSelected, s.id);
+    const fc = pCol(sp);
+    h += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+      <div style="font-size:11px;min-width:90px;color:var(--text2)">${s.title}</div>
+      <div style="flex:1;height:14px;background:var(--surface);border-radius:7px;overflow:hidden;position:relative">
+        <div style="height:100%;border-radius:7px;background:${fc};width:${sp}%;transition:width .5s"></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;min-width:32px;text-align:right;color:${fc}">${sp}%</div>
+    </div>`;
+  });
+  h += '</div>';
+
+  // グラフ：3種評価棒グラフ
+  const selfAvg  = (()=>{ let s=0,c=0; SHEETS_DATA.forEach(sh=>sh.categories.forEach((cat,ci)=>cat.items.forEach((_,ii)=>{ s+=getSelfScore(adminSelected,sh.id,ci,ii);c++; }))); return c?Math.round(s/c*20):0; })();
+  const adminAvg = (()=>{ let s=0,c=0; SHEETS_DATA.forEach(sh=>sh.categories.forEach((cat,ci)=>cat.items.forEach((_,ii)=>{ s+=getAdminScore(adminSelected,sh.id,ci,ii);c++; }))); return c?Math.round(s/c*20):0; })();
+  const rijAvg   = (()=>{ let s=0,c=0; SHEETS_DATA.forEach(sh=>sh.categories.forEach((cat,ci)=>cat.items.forEach((_,ii)=>{ s+=getRijichoScore(adminSelected,sh.id,ci,ii);c++; }))); return c?Math.round(s/c*20):0; })();
+  h += `<div style="background:var(--surface2);border-radius:var(--radius);padding:14px;margin-bottom:14px">
+    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px">👥 評価者別 平均スコア</div>
+    <div style="display:flex;gap:10px;align-items:flex-end;height:70px;margin-bottom:6px">`;
+  [{label:'セルフ',val:selfAvg,col:'var(--accent)'},{label:'部門長',val:adminAvg,col:'var(--green)'},{label:'理事長',val:rijAvg,col:'var(--purple)'}].forEach(item=>{
+    h += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div style="font-size:12px;font-weight:700;color:${item.col}">${item.val}%</div>
+      <div style="width:100%;border-radius:4px 4px 0 0;background:${item.col};height:${Math.max(item.val*0.55,2)}px"></div>
+    </div>`;
+  });
+  h += `</div><div style="display:flex;gap:10px">
+    <div style="flex:1;text-align:center;font-size:11px;color:var(--text3)">セルフ</div>
+    <div style="flex:1;text-align:center;font-size:11px;color:var(--text3)">部門長</div>
+    <div style="flex:1;text-align:center;font-size:11px;color:var(--text3)">理事長</div>
+  </div></div>`;
+
+  // グラフ：スタッフ比較
+  h += `<div style="background:var(--surface2);border-radius:var(--radius);padding:14px;margin-bottom:14px">
+    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px">🏆 スタッフ進捗比較</div>`;
+  TRAINEES.forEach(tr=>{
+    const tp=totalPct(tr.id); const tc=pCol(tp); const isSel=tr.id===adminSelected;
+    h += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;cursor:pointer" onclick="selAdmin('${tr.id}')">
+      <div style="width:26px;height:26px;border-radius:50%;background:var(--purple-bg);color:var(--purple);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;${isSel?'border:2px solid var(--accent)':''}">${initials(tr.name)}</div>
+      <div style="font-size:12px;min-width:60px;font-weight:${isSel?700:400}">${tr.name.split(/\s+/)[0]}</div>
+      <div style="flex:1;height:12px;background:var(--surface);border-radius:6px;overflow:hidden">
+        <div style="height:100%;border-radius:6px;background:${tc};width:${tp}%"></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;min-width:32px;text-align:right;color:${tc}">${tp}%</div>
+    </div>`;
+  });
+  h += '</div>';
+  SHEETS_DATA.forEach(s => {
+    h += `<div class="ast-sheet"><div class="ast-header">${s.title}｜${s.subtitle}</div>`;
+    s.categories.forEach((cat,ci) => {
+      h += `<div class="ast-cat-name">${cat.name}</div>`;
+      cat.items.forEach((item,ii) => {
+        const self = getSelfScore(adminSelected, s.id, ci, ii);
+        const admin = getAdminScore(adminSelected, s.id, ci, ii);
+        const rijicho = getRijichoScore(adminSelected, s.id, ci, ii);
+        const avg = calcItemScore(self, admin, rijicho);
+        const dc = avg>=4?'dot-g':avg>=2?'dot-a':'dot-x';
+        const bd = avg>=4?'b-done':avg>=2?'b-wip':'b-todo';
+        const bl = avg>=4?'習得':avg>=2?'練習中':'未着手';
+        const selfStars = [1,2,3,4,5].map(n=>`<span class="s-star ${self>=n?'on':'off'}">★</span>`).join('');
+        const adminStars = [1,2,3,4,5].map(n=>`<span class="s-star ${admin>=n?'admin-on':'off'}">★</span>`).join('');
+        const rijichoStars = [1,2,3,4,5].map(n=>`<span class="s-star ${rijicho>=n?'rijicho-on':'off'}">★</span>`).join('');
+        h += `<div class="ast-item">
+          <div class="dot ${dc}"></div>
+          <div style="flex:1;font-size:13px">${item}</div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+            <div style="display:flex;align-items:center;gap:4px"><span style="font-size:9px;color:var(--accent)">自己</span>${selfStars}</div>
+            <div style="display:flex;align-items:center;gap:4px"><span style="font-size:9px;color:var(--green)">部門</span>${adminStars}</div>
+            <div style="display:flex;align-items:center;gap:4px"><span style="font-size:9px;color:var(--purple)">理事</span>${rijichoStars}</div>
+          </div>
+          <span class="badge ${bd}" style="margin-left:6px">${bl}</span>
+        </div>`;
+      });
+    });
+    h += '</div>';
+  });
+  h += '</div></div>';
+  document.getElementById('view-admin').innerHTML = h;
+}
+function selAdmin(id) { adminSelected=id; renderAdminView(); }
+
+// ===== SETTINGS VIEW =====
+function renderSettingsView() {
+  if (!settingsSheet) settingsSheet = SHEETS_DATA[0]?.id;
+  const sheet = SHEETS_DATA.find(s=>s.id===settingsSheet);
+  const sIdx = SHEETS_DATA.findIndex(s=>s.id===settingsSheet);
+
+  let h = `
+  <div class="info-box">
+    💡 <strong>2通りの編集方法</strong>：このページで直接編集するか、Claudeに「〇〇を追加して」とチャットで依頼することができます。どちらで変更しても結果は同じです。
+  </div>
+  <div class="settings-grid" style="display:flex;flex-direction:column;gap:0">
+
+    <!-- 左列: 衛生士管理 -->
+    <div>
+      <div class="settings-section">
+        <h2><span>👤</span> 衛生士の管理</h2>
+        <div id="trainee-editor">`;
+
+  TRAINEES.forEach((t, ti) => {
+    h += `<div class="trainee-row">
+      <div class="te-avatar">${initials(t.name)}</div>
+      <div class="te-fields">
+        <input type="text" value="${t.name}" placeholder="名前" oninput="updateTrainee(${ti},'name',this.value)">
+        <div style="display:flex;gap:6px">
+          <input type="text" value="${t.trainer}" placeholder="担当DH" oninput="updateTrainee(${ti},'trainer',this.value)" style="flex:1">
+          <input type="text" value="${t.joined}" placeholder="入社年月" oninput="updateTrainee(${ti},'joined',this.value)" style="flex:1">
+        </div>
+      </div>
+      <button class="btn btn-sm btn-danger" onclick="removeTrainee(${ti})">削除</button>
+    </div>`;
+  });
+
+  h += `</div>
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+          <input type="text" id="new-t-name" placeholder="名前（例：鈴木 はな）">
+          <div style="display:flex;gap:6px">
+            <input type="text" id="new-t-trainer" placeholder="担当DH" style="flex:1">
+            <input type="text" id="new-t-joined" placeholder="入社年月" style="flex:1">
+          </div>
+          <button class="btn btn-primary" onclick="addTrainee()">+ 衛生士を追加</button>
+        </div>
+      </div>
+
+      <!-- JSON インポート/エクスポート -->
+      <div class="settings-section" style="margin-top:16px">
+        <h2><span>📋</span> データのバックアップ・引き継ぎ</h2>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px">
+          下のテキストをコピーして保存しておくと、別のPCでも同じデータを使えます。
+        </div>
+        <textarea class="json-area" id="json-export" readonly></textarea>
+        <div class="btn-row">
+          <button class="btn btn-sm" onclick="copyJson()">📋 コピー</button>
+          <button class="btn btn-sm btn-danger" onclick="resetAll()">⚠ 全リセット</button>
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-top:12px;margin-bottom:6px">
+          保存したデータをここに貼り付けて読み込み：
+        </div>
+        <textarea class="json-area" id="json-import" placeholder="ここにJSONを貼り付け..."></textarea>
+        <div class="btn-row">
+          <button class="btn btn-primary btn-sm" onclick="importJson()">読み込む</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右列: 項目管理 -->
+    <div class="settings-section">
+      <h2><span>📝</span> チェック項目の編集</h2>
+      <div class="sheet-selector">`;
+
+  SHEETS_DATA.forEach(s => {
+    h += `<button class="ss-btn ${s.id===settingsSheet?'active':''}" onclick="selSettingsSheet('${s.id}')">${s.title}</button>`;
+  });
+
+  h += `</div>
+      <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <div style="font-size:13px;font-weight:600">${sheet.title}</div>
+        <input type="text" value="${sheet.subtitle}" placeholder="サブタイトル" oninput="updateSheetSubtitle(${sIdx},this.value)" style="flex:1;font-size:12px">
+      </div>`;
+
+  sheet.categories.forEach((cat, ci) => {
+    h += `<div class="edit-cat">
+      <div class="edit-cat-header">
+        <input type="text" value="${cat.name}" oninput="updateCatName(${sIdx},${ci},this.value)" style="font-weight:600;font-size:13px;background:transparent;border:none;border-bottom:1px solid var(--border2);border-radius:0;padding:2px 4px;flex:1">
+        <button class="btn btn-sm btn-danger" onclick="removeCat(${sIdx},${ci})">削除</button>
+      </div>
+      <div class="edit-items">`;
+    cat.items.forEach((item, ii) => {
+      h += `<div class="edit-item-row">
+        <span class="drag-handle">≡</span>
+        <input type="text" value="${item}" oninput="updateItem(${sIdx},${ci},${ii},this.value)">
+        <button class="btn btn-sm btn-danger" onclick="removeItem(${sIdx},${ci},${ii})">×</button>
+      </div>`;
+    });
+    h += `<div style="margin-top:6px;display:flex;gap:6px">
+        <input type="text" id="ni-${ci}" placeholder="新しい項目を追加..." style="flex:1;font-size:12px">
+        <button class="btn btn-sm btn-primary" onclick="addItem(${sIdx},${ci})">追加</button>
+      </div>
+      </div>
+    </div>`;
+  });
+
+  h += `<div style="margin-top:12px;display:flex;gap:8px">
+      <input type="text" id="new-cat-name" placeholder="新しいカテゴリ名" style="flex:1">
+      <button class="btn btn-primary btn-sm" onclick="addCat(${sIdx})">+ カテゴリ追加</button>
+    </div>
+    </div>
+
+  </div>`;
+
+  document.getElementById('view-settings').innerHTML = h;
+
+  // JSON export
+  const exportData = { trainees: TRAINEES, sheets: SHEETS_DATA, scores };
+  document.getElementById('json-export').value = JSON.stringify(exportData, null, 2);
+}
+
+// ===== SETTINGS ACTIONS =====
+function updateTrainee(ti, key, val) {
+  TRAINEES[ti][key] = val;
+  if (key === 'name') TRAINEES[ti].initials = initials(val);
+  saveAll(); renderSidebar();
+}
+function removeTrainee(ti) {
+  if (!confirm(`「${TRAINEES[ti].name}」を削除しますか？\n（評価データも削除されます）`)) return;
+  TRAINEES.splice(ti, 1);
+  if (currentTrainee === TRAINEES[ti]?.id) currentTrainee = TRAINEES[0]?.id;
+  saveAll(); renderSettingsView(); renderSidebar();
+  toast('削除しました');
+}
+function addTrainee() {
+  const name = document.getElementById('new-t-name').value.trim();
+  const trainer = document.getElementById('new-t-trainer').value.trim();
+  const joined = document.getElementById('new-t-joined').value.trim();
+  if (!name) { toast('名前を入力してください'); return; }
+  TRAINEES.push({ id: 't'+Date.now(), name, initials: initials(name), joined: joined||'', trainer: trainer||'' });
+  saveAll(); renderSettingsView(); renderSidebar(); toast('追加しました');
+}
+
+function selSettingsSheet(id) { settingsSheet=id; renderSettingsView(); }
+function updateSheetSubtitle(si, val) { SHEETS_DATA[si].subtitle=val; saveAll(); }
+function updateCatName(si, ci, val) { SHEETS_DATA[si].categories[ci].name=val; saveAll(); }
+function updateItem(si, ci, ii, val) { SHEETS_DATA[si].categories[ci].items[ii]=val; saveAll(); }
+function removeItem(si, ci, ii) {
+  SHEETS_DATA[si].categories[ci].items.splice(ii,1);
+  saveAll(); renderSettingsView(); toast('削除しました');
+}
+function addItem(si, ci) {
+  const inp = document.getElementById(`ni-${ci}`);
+  const val = inp?.value.trim();
+  if (!val) return;
+  SHEETS_DATA[si].categories[ci].items.push(val);
+  saveAll(); renderSettingsView(); toast('追加しました');
+}
+function removeCat(si, ci) {
+  if (!confirm(`「${SHEETS_DATA[si].categories[ci].name}」カテゴリを削除しますか？`)) return;
+  SHEETS_DATA[si].categories.splice(ci,1);
+  saveAll(); renderSettingsView(); toast('削除しました');
+}
+function addCat(si) {
+  const inp = document.getElementById('new-cat-name');
+  const val = inp?.value.trim();
+  if (!val) return;
+  SHEETS_DATA[si].categories.push({ name: val, items: [] });
+  saveAll(); renderSettingsView(); toast('カテゴリを追加しました');
+}
+
+function copyJson() {
+  const ta = document.getElementById('json-export');
+  navigator.clipboard.writeText(ta.value).then(() => toast('クリップボードにコピーしました'));
+}
+function importJson() {
+  const val = document.getElementById('json-import').value.trim();
+  if (!val) return;
+  try {
+    const d = JSON.parse(val);
+    if (d.trainees) TRAINEES = d.trainees;
+    if (d.sheets) SHEETS_DATA = d.sheets;
+    if (d.scores) Object.assign(scores, d.scores);
+    saveAll(); renderSettingsView(); renderSidebar?.(); toast('データを読み込みました');
+  } catch(e) { toast('JSONの形式が正しくありません'); }
+}
+function resetAll() {
+  if (!confirm('全データをリセットしますか？\n（評価スコアや設定変更がすべて消えます）')) return;
+  localStorage.removeItem('skillcheck_v3_cache');
+  Promise.all([
+    dbSetSetting('trainees', DEFAULT_TRAINEES),
+    dbSetSetting('sheets', DEFAULT_SHEETS),
+    sbFetch('/rest/v1/scores', { method: 'DELETE', headers: { 'Prefer': '' } })
+  ]).then(() => {
+    TRAINEES = JSON.parse(JSON.stringify(DEFAULT_TRAINEES));
+    SHEETS_DATA = JSON.parse(JSON.stringify(DEFAULT_SHEETS));
+    Object.keys(scores).forEach(k => delete scores[k]);
+    renderSettingsView(); renderSidebar?.(); toast('リセットしました');
+  }).catch(e => toast('リセットエラー: ' + e.message));
+}
+
+// ===== TOAST =====
+function toast(msg) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ===== INIT =====
+(async () => {
+  await loadAll();
+  renderLogin();
+})();
+</script>
+</body>
+</html>
