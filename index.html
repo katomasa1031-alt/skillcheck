@@ -113,6 +113,8 @@
 
   /* 詳細パネル */
   .detail-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-top: 14px; }
+  .admin-layout { display: flex; flex-direction: column; gap: 16px; }
+  @media (min-width: 640px) { .admin-layout { flex-direction: row; align-items: flex-start; } .admin-layout .trainee-cards { width: 260px; flex-shrink: 0; } .admin-layout .detail-panel { flex: 1; margin-top: 0; } }
   .detail-top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
   .sp-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
   .sp-name { font-size: 13px; flex: 1; }
