@@ -755,34 +755,57 @@ function renderAdminMainView() {
   const mn = document.getElementById('mobile-nav');
 
   if (isMobile) {
+    // スマホ：mobile-contentに描画
     if (dm) dm.style.display = 'none';
     if (dt) dt.style.display = 'none';
+    if (mc) mc.style.display = 'block';
     if (mn) mn.style.display = 'block';
     if (mc) {
-      mc.style.display = 'block';
       mc.innerHTML = '';
-      const div = document.createElement('div');
-      div.id = 'view-' + currentView;
-      mc.appendChild(div);
-      if (currentView === 'trainee') renderTraineeView();
-      else if (currentView === 'admin') renderAdminView();
-      else if (currentView === 'settings') renderSettingsView();
+      if (currentView === 'trainee') renderTraineeViewInto(mc);
+      else if (currentView === 'admin') renderAdminViewInto(mc);
+      else if (currentView === 'settings') renderSettingsViewInto(mc);
     }
   } else {
+    // PC：desktop-mainに描画
     if (dm) { dm.style.display = 'flex'; dm.style.flex = '1'; dm.style.overflow = 'hidden'; }
     if (dt) dt.style.display = 'flex';
     if (mc) mc.style.display = 'none';
     if (mn) mn.style.display = 'none';
-    // PCのview切替
+    // viewの表示切替
     ['trainee','admin','settings'].forEach(v => {
       const el = document.getElementById('view-'+v);
-      if (el) el.style.display = v===currentView ? 'block' : 'none';
+      if (el) el.style.display = (v === currentView) ? 'block' : 'none';
     });
     renderSidebar();
-    if (currentView === 'trainee') renderTraineeView();
-    else if (currentView === 'admin') renderAdminView();
-    else if (currentView === 'settings') renderSettingsView();
+    const target = document.getElementById('view-' + currentView);
+    if (!target) return;
+    if (currentView === 'trainee') renderTraineeViewInto(target);
+    else if (currentView === 'admin') renderAdminViewInto(target);
+    else if (currentView === 'settings') renderSettingsViewInto(target);
   }
+}
+
+// 描画先を引数で受け取るラッパー
+function renderTraineeViewInto(container) {
+  if (!currentTrainee || !TRAINEES.find(t=>t.id===currentTrainee)) currentTrainee = TRAINEES[0]?.id;
+  if (!currentSheet || !SHEETS_DATA.find(s=>s.id===currentSheet)) currentSheet = SHEETS_DATA[0]?.id;
+  const div = document.createElement('div');
+  div.id = 'view-trainee-inner';
+  container.appendChild(div);
+  renderTraineeView();
+}
+function renderAdminViewInto(container) {
+  const div = document.createElement('div');
+  div.id = 'view-admin';
+  container.appendChild(div);
+  renderAdminView();
+}
+function renderSettingsViewInto(container) {
+  const div = document.createElement('div');
+  div.id = 'view-settings';
+  container.appendChild(div);
+  renderSettingsView();
 }
 
 function switchView(v) {
@@ -851,7 +874,7 @@ function renderTraineeView() {
   <div class="sheet-tab-nav" id="pc-admin-sheet-tabs" style="margin-bottom:14px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden"></div>
   <div id="admin-categories"></div>`;
 
-  const tvEl = document.getElementById('view-trainee') || document.getElementById('mobile-content'); if(tvEl) tvEl.innerHTML = h;
+  const tvEl = document.getElementById('view-trainee') || document.getElementById('view-trainee-inner'); if(tvEl) tvEl.innerHTML = h;
   renderSheetTabNav();
   renderAdminTraineeCategories();
 }
@@ -1029,9 +1052,8 @@ function renderAdminView() {
     h += '</div>';
   });
   h += '</div></div>';
-  // view-adminがあればそこへ、なければmobile-contentへ
-  const target = document.getElementById('view-admin') || document.getElementById('mobile-content');
-  if (target) target.innerHTML = h;
+  const target = document.getElementById('view-admin');
+  if (target) { target.innerHTML = h; }
 }
 function selAdmin(id) { adminSelected=id; renderAdminView(); }
 
@@ -1144,7 +1166,7 @@ function renderSettingsView() {
 
   </div>`;
 
-  const svEl = document.getElementById('view-settings') || document.getElementById('mobile-content'); if(svEl) svEl.innerHTML = h;
+  const svEl = document.getElementById('view-settings'); if(svEl) svEl.innerHTML = h;
 
   // JSON export
   const exportData = { trainees: TRAINEES, sheets: SHEETS_DATA, scores };
