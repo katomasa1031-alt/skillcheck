@@ -760,16 +760,13 @@ function renderAdminMainView() {
     if (mn) mn.style.display = 'block';
     if (mc) {
       mc.style.display = 'block';
-      if (currentView === 'trainee') {
-        mc.innerHTML = '<div id="view-trainee"></div>';
-        renderTraineeView();
-      } else if (currentView === 'admin') {
-        mc.innerHTML = '<div id="view-admin"></div>';
-        renderAdminView();
-      } else if (currentView === 'settings') {
-        mc.innerHTML = '<div id="view-settings"></div>';
-        renderSettingsView();
-      }
+      mc.innerHTML = '';
+      const div = document.createElement('div');
+      div.id = 'view-' + currentView;
+      mc.appendChild(div);
+      if (currentView === 'trainee') renderTraineeView();
+      else if (currentView === 'admin') renderAdminView();
+      else if (currentView === 'settings') renderSettingsView();
     }
   } else {
     if (dm) { dm.style.display = 'flex'; dm.style.flex = '1'; dm.style.overflow = 'hidden'; }
@@ -854,7 +851,7 @@ function renderTraineeView() {
   <div class="sheet-tab-nav" id="pc-admin-sheet-tabs" style="margin-bottom:14px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden"></div>
   <div id="admin-categories"></div>`;
 
-  document.getElementById('view-trainee').innerHTML = h;
+  const tvEl = document.getElementById('view-trainee'); if(tvEl) tvEl.innerHTML = h;
   renderSheetTabNav();
   renderAdminTraineeCategories();
 }
@@ -900,7 +897,7 @@ function renderAdminTraineeCategories() {
   });
   const catEl = document.getElementById('admin-categories');
   if (catEl) catEl.innerHTML = h;
-  else document.getElementById('view-trainee').innerHTML = h;
+  else const tvEl = document.getElementById('view-trainee'); if(tvEl) tvEl.innerHTML = h;
 }
 
 function setAdminScore(ci, ii, val) {
@@ -1031,7 +1028,8 @@ function renderAdminView() {
     h += '</div>';
   });
   h += '</div></div>';
-  document.getElementById('view-admin').innerHTML = h;
+  const target = document.getElementById('view-admin');
+  if (target) target.innerHTML = h;
 }
 function selAdmin(id) { adminSelected=id; renderAdminView(); }
 
@@ -1144,7 +1142,7 @@ function renderSettingsView() {
 
   </div>`;
 
-  document.getElementById('view-settings').innerHTML = h;
+  const svEl = document.getElementById('view-settings'); if(svEl) svEl.innerHTML = h;
 
   // JSON export
   const exportData = { trainees: TRAINEES, sheets: SHEETS_DATA, scores };
