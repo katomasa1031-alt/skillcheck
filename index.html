@@ -851,7 +851,7 @@ function renderTraineeView() {
   <div class="sheet-tab-nav" id="pc-admin-sheet-tabs" style="margin-bottom:14px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden"></div>
   <div id="admin-categories"></div>`;
 
-  const tvEl = document.getElementById('view-trainee'); if(tvEl) tvEl.innerHTML = h;
+  const tvEl = document.getElementById('view-trainee') || document.getElementById('mobile-content'); if(tvEl) tvEl.innerHTML = h;
   renderSheetTabNav();
   renderAdminTraineeCategories();
 }
@@ -896,8 +896,9 @@ function renderAdminTraineeCategories() {
     h += '</div></div>';
   });
   const catEl = document.getElementById('admin-categories');
+  const tvEl2 = document.getElementById('view-trainee') || document.getElementById('mobile-content');
   if (catEl) catEl.innerHTML = h;
-  else const tvEl = document.getElementById('view-trainee'); if(tvEl) tvEl.innerHTML = h;
+  else if (tvEl2) tvEl2.innerHTML = h;
 }
 
 function setAdminScore(ci, ii, val) {
@@ -1028,7 +1029,8 @@ function renderAdminView() {
     h += '</div>';
   });
   h += '</div></div>';
-  const target = document.getElementById('view-admin');
+  // view-adminがあればそこへ、なければmobile-contentへ
+  const target = document.getElementById('view-admin') || document.getElementById('mobile-content');
   if (target) target.innerHTML = h;
 }
 function selAdmin(id) { adminSelected=id; renderAdminView(); }
@@ -1142,7 +1144,7 @@ function renderSettingsView() {
 
   </div>`;
 
-  const svEl = document.getElementById('view-settings'); if(svEl) svEl.innerHTML = h;
+  const svEl = document.getElementById('view-settings') || document.getElementById('mobile-content'); if(svEl) svEl.innerHTML = h;
 
   // JSON export
   const exportData = { trainees: TRAINEES, sheets: SHEETS_DATA, scores };
