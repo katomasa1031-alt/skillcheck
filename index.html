@@ -524,7 +524,7 @@ function renderLogin() {
 function enterAs(mode) {
   if (mode === 'admin') {
     const pw = prompt('教育者パスワードを入力してください');
-    if (pw !== 'dental8020') {
+    if (pw !== '2740') {
       alert('パスワードが違います');
       return;
     }
@@ -591,46 +591,6 @@ function logout() {
   renderLogin();
 }
 
-// ===== 教育者モード：PCとスマホで切替 =====
-function renderAdminMainView() {
-  // isMobileを毎回最新の値で判定
-  isMobile = window.innerWidth < 640;
-
-  const dm = document.getElementById('desktop-main');
-  const mc = document.getElementById('mobile-content');
-  const dt = document.getElementById('desktop-tabs');
-  const mn = document.getElementById('mobile-nav');
-
-  if (isMobile) {
-    if (dm) dm.style.display = 'none';
-    if (dt) dt.style.display = 'none';
-    if (mc) { mc.style.display = 'block'; }
-    if (mn) mn.style.display = 'block';
-    // mobile-contentに直接レンダリング
-    if (mc) {
-      if (currentView === 'trainee') {
-        mc.innerHTML = '<div id="view-trainee"></div>';
-        renderTraineeView();
-      } else if (currentView === 'admin') {
-        mc.innerHTML = '<div id="view-admin"></div>';
-        renderAdminView();
-      } else if (currentView === 'settings') {
-        mc.innerHTML = '<div id="view-settings"></div>';
-        renderSettingsView();
-      }
-    }
-  } else {
-    if (dm) { dm.style.display = 'flex'; dm.style.flex = '1'; dm.style.overflow = 'hidden'; }
-    if (dt) dt.style.display = 'flex';
-    if (mc) mc.style.display = 'none';
-    if (mn) mn.style.display = 'none';
-    renderSidebar();
-    if (currentView === 'trainee') renderTraineeView();
-    else if (currentView === 'admin') renderAdminView();
-    else if (currentView === 'settings') renderSettingsView();
-  }
-}
-
 // ===== 新人ログイン（自分を選ぶ画面） =====
 function renderTraineeLogin() {
   if (currentTrainee) { renderMyProgress(); return; }
@@ -665,20 +625,21 @@ function selMySheet(id) {
 
 // ===== シートタブナビ描画（ボトムナビ用） =====
 function renderSheetTabNav() {
-  // 新人側
+  const adminTabs = SHEETS_DATA.map(s =>
+    `<button class="sheet-tab-btn ${s.id===currentSheet?'active':''}" onclick="selSheetAdmin('${s.id}')">${s.subtitle}</button>`
+  ).join('');
+  const traineeTabs = SHEETS_DATA.map(s =>
+    `<button class="sheet-tab-btn ${s.id===currentSheet?'active':''}" onclick="selMySheet('${s.id}')">${s.subtitle}</button>`
+  ).join('');
+  // 新人側ボトムナビ
   const traineeNav = document.getElementById('trainee-tab-nav');
-  if (traineeNav) {
-    traineeNav.innerHTML = SHEETS_DATA.map(s =>
-      `<button class="sheet-tab-btn ${s.id===currentSheet?'active':''}" onclick="selMySheet('${s.id}')">${s.subtitle}</button>`
-    ).join('');
-  }
-  // 教育者側（衛生士タブ表示中）
+  if (traineeNav) traineeNav.innerHTML = traineeTabs;
+  // 教育者側（スマホボトムナビ）
   const adminNav = document.getElementById('admin-tab-nav');
-  if (adminNav && currentView === 'trainee') {
-    adminNav.innerHTML = SHEETS_DATA.map(s =>
-      `<button class="sheet-tab-btn ${s.id===currentSheet?'active':''}" onclick="selSheetAdmin('${s.id}')">${s.subtitle}</button>`
-    ).join('');
-  }
+  if (adminNav) adminNav.innerHTML = adminTabs;
+  // 教育者側（PCインラインタブ）
+  const pcTab = document.getElementById('pc-admin-sheet-tabs');
+  if (pcTab) pcTab.innerHTML = adminTabs;
 }
 
 function selSheetAdmin(id) {
@@ -813,6 +774,11 @@ function renderAdminMainView() {
     if (dt) dt.style.display = 'flex';
     if (mc) mc.style.display = 'none';
     if (mn) mn.style.display = 'none';
+    // PCのview切替
+    ['trainee','admin','settings'].forEach(v => {
+      const el = document.getElementById('view-'+v);
+      if (el) el.style.display = v===currentView ? 'block' : 'none';
+    });
     renderSidebar();
     if (currentView === 'trainee') renderTraineeView();
     else if (currentView === 'admin') renderAdminView();
@@ -883,6 +849,7 @@ function renderTraineeView() {
     <div class="summary-sub">${doneItems} / ${totItems} 項目を習得済み</div>
     <div class="summary-bar"><div class="summary-bar-fill" style="width:${overall}%"></div></div>
   </div>
+  <div class="sheet-tab-nav" id="pc-admin-sheet-tabs" style="margin-bottom:14px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden"></div>
   <div id="admin-categories"></div>`;
 
   document.getElementById('view-trainee').innerHTML = h;
