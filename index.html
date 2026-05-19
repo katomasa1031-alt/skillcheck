@@ -33,8 +33,13 @@
   .view { display: none; }
   .view.active { display: block; }
 
-  /* ===== ボトムナビ ===== */
-  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+  /* ===== ボトムナビ（シートタブ） ===== */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+  .sheet-tab-nav { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .sheet-tab-nav::-webkit-scrollbar { display: none; }
+  .sheet-tab-btn { flex-shrink: 0; padding: 10px 14px; border: none; border-top: 2px solid transparent; background: transparent; color: var(--text3); font-size: 12px; font-family: inherit; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; transition: all .15s; }
+  .sheet-tab-btn.active { color: var(--accent); border-top-color: var(--accent); font-weight: 600; background: var(--accent-light); }
+  /* 教育者モード用ナビ（衛生士/教育者/設定の3タブ） */
   .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px; cursor: pointer; border: none; background: transparent; color: var(--text3); font-size: 10px; font-family: inherit; gap: 3px; transition: color .15s; -webkit-tap-highlight-color: transparent; }
   .nav-btn .nav-icon { font-size: 20px; line-height: 1; }
   .nav-btn.active { color: var(--accent); }
@@ -536,14 +541,12 @@ function buildApp() {
     document.getElementById('app-root').innerHTML = `
       <div class="app">
         <div class="topbar">
-          <div class="topbar-logo">つなしまファミリー歯科 <span>スキルチェック</span></div>
-          <button onclick="logout()" style="margin-left:auto;background:transparent;border:none;font-size:12px;color:var(--text3);cursor:pointer;padding:4px 8px">ログアウト</button>
+          <div class="topbar-logo" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px">つなしまファミリー歯科 <span>スキルチェック</span></div>
+          <button onclick="logout()" style="margin-left:auto;background:transparent;border:none;font-size:12px;color:var(--text3);cursor:pointer;padding:4px 8px;flex-shrink:0">ログアウト</button>
         </div>
-        <div class="content" id="trainee-content"></div>
-        <nav class="bottom-nav desktop-hide">
-          <button class="nav-btn active" id="nav-my">
-            <span class="nav-icon">🩺</span>進捗
-          </button>
+        <div class="content" id="trainee-content" style="padding-bottom:60px"></div>
+        <nav class="bottom-nav" id="trainee-sheet-nav">
+          <div class="sheet-tab-nav" id="trainee-tab-nav"></div>
         </nav>
       </div>
       <div class="toast" id="toast"></div>`;
@@ -553,7 +556,7 @@ function buildApp() {
     document.getElementById('app-root').innerHTML = `
       <div class="app">
         <div class="topbar">
-          <div class="topbar-logo">つなしまファミリー歯科 <span>衛生士スキルチェック</span></div>
+          <div class="topbar-logo" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px">つなしまファミリー歯科 <span>衛生士スキルチェック</span></div>
           <button onclick="logout()" style="margin-left:auto;background:transparent;border:none;font-size:12px;color:var(--text3);cursor:pointer;padding:4px 8px">ログアウト</button>
           <div id="desktop-tabs" style="display:none;gap:6px;margin-left:8px">
             <button class="view-btn active" id="dtab-trainee" onclick="switchView('trainee')">衛生士</button>
@@ -569,26 +572,15 @@ function buildApp() {
             <div class="view" id="view-settings"></div>
           </div>
         </div>
-        <div id="mobile-content" style="flex:1;overflow-y:auto;padding:16px;padding-bottom:80px;display:none"></div>
+        <div id="mobile-content" style="flex:1;overflow-y:auto;padding:16px;padding-bottom:60px;display:none"></div>
         <nav id="mobile-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);z-index:100;padding-bottom:env(safe-area-inset-bottom)">
-          <div style="display:flex">
-            <button class="nav-btn active" id="nav-trainee" onclick="switchView('trainee')">
-              <span class="nav-icon">🩺</span>衛生士
-            </button>
-            <button class="nav-btn" id="nav-admin" onclick="switchView('admin')">
-              <span class="nav-icon">📊</span>教育者
-            </button>
-            <button class="nav-btn" id="nav-settings" onclick="switchView('settings')">
-              <span class="nav-icon">⚙️</span>設定
-            </button>
-          </div>
+          <div class="sheet-tab-nav" id="admin-tab-nav"></div>
         </nav>
       </div>
       <div class="toast" id="toast"></div>`;
-    currentView = 'trainee';
+    currentView = 'admin';
     if (!currentTrainee) currentTrainee = TRAINEES[0]?.id;
     if (!currentSheet) currentSheet = SHEETS_DATA[0]?.id;
-    renderSidebar();
     renderAdminMainView();
   }
 }
@@ -597,6 +589,46 @@ function logout() {
   userMode = null;
   localStorage.removeItem('skillcheck_mode');
   renderLogin();
+}
+
+// ===== 教育者モード：PCとスマホで切替 =====
+function renderAdminMainView() {
+  // isMobileを毎回最新の値で判定
+  isMobile = window.innerWidth < 640;
+
+  const dm = document.getElementById('desktop-main');
+  const mc = document.getElementById('mobile-content');
+  const dt = document.getElementById('desktop-tabs');
+  const mn = document.getElementById('mobile-nav');
+
+  if (isMobile) {
+    if (dm) dm.style.display = 'none';
+    if (dt) dt.style.display = 'none';
+    if (mc) { mc.style.display = 'block'; }
+    if (mn) mn.style.display = 'block';
+    // mobile-contentに直接レンダリング
+    if (mc) {
+      if (currentView === 'trainee') {
+        mc.innerHTML = '<div id="view-trainee"></div>';
+        renderTraineeView();
+      } else if (currentView === 'admin') {
+        mc.innerHTML = '<div id="view-admin"></div>';
+        renderAdminView();
+      } else if (currentView === 'settings') {
+        mc.innerHTML = '<div id="view-settings"></div>';
+        renderSettingsView();
+      }
+    }
+  } else {
+    if (dm) { dm.style.display = 'flex'; dm.style.flex = '1'; dm.style.overflow = 'hidden'; }
+    if (dt) dt.style.display = 'flex';
+    if (mc) mc.style.display = 'none';
+    if (mn) mn.style.display = 'none';
+    renderSidebar();
+    if (currentView === 'trainee') renderTraineeView();
+    else if (currentView === 'admin') renderAdminView();
+    else if (currentView === 'settings') renderSettingsView();
+  }
 }
 
 // ===== 新人ログイン（自分を選ぶ画面） =====
@@ -625,6 +657,38 @@ function selectSelf(tid) {
   renderMyProgress();
 }
 
+function selMySheet(id) {
+  currentSheet = id;
+  renderSheetTabNav(); // ボトムタブのactive更新
+  renderMyCategories();
+}
+
+// ===== シートタブナビ描画（ボトムナビ用） =====
+function renderSheetTabNav() {
+  // 新人側
+  const traineeNav = document.getElementById('trainee-tab-nav');
+  if (traineeNav) {
+    traineeNav.innerHTML = SHEETS_DATA.map(s =>
+      `<button class="sheet-tab-btn ${s.id===currentSheet?'active':''}" onclick="selMySheet('${s.id}')">${s.subtitle}</button>`
+    ).join('');
+  }
+  // 教育者側（衛生士タブ表示中）
+  const adminNav = document.getElementById('admin-tab-nav');
+  if (adminNav && currentView === 'trainee') {
+    adminNav.innerHTML = SHEETS_DATA.map(s =>
+      `<button class="sheet-tab-btn ${s.id===currentSheet?'active':''}" onclick="selSheetAdmin('${s.id}')">${s.subtitle}</button>`
+    ).join('');
+  }
+}
+
+function selSheetAdmin(id) {
+  currentSheet = id;
+  renderSheetTabNav();
+  // 教育者の衛生士タブを再描画（カテゴリ部分のみ）
+  const catEl = document.getElementById('admin-categories');
+  if (catEl) renderAdminTraineeCategories();
+}
+
 // ===== 新人の進捗ページ（自分だけ） =====
 function renderMyProgress() {
   const t = TRAINEES.find(x=>x.id===currentTrainee);
@@ -647,16 +711,18 @@ function renderMyProgress() {
     <div class="summary-sub">${doneItems} / ${totItems} 項目を習得済み</div>
     <div class="summary-bar"><div class="summary-bar-fill" style="width:${overall}%"></div></div>
   </div>
-  <div class="sheet-scroll">`;
-  SHEETS_DATA.forEach(s => {
-    const p = sheetPct(currentTrainee, s.id);
-    h += `<button class="sheet-chip ${s.id===currentSheet?'active':''}" onclick="currentSheet='${s.id}';renderMyProgress()">${s.title} ${p}%</button>`;
-  });
-  h += '</div>';
+  <div id="my-categories"></div>`;
 
+  const el = document.getElementById('trainee-content');
+  if (el) el.innerHTML = h;
+  renderSheetTabNav();
+  renderMyCategories();
+}
+
+function renderMyCategories() {
   const sheet = SHEETS_DATA.find(s=>s.id===currentSheet);
-  h += `<div style="color:var(--text3);font-size:12px;margin-bottom:10px">${sheet.subtitle}</div>`;
-
+  if (!sheet) return;
+  let h = `<div style="color:var(--text3);font-size:12px;margin-bottom:10px">${sheet.subtitle}</div>`;
   sheet.categories.forEach((cat, ci) => {
     let cDone=0;
     cat.items.forEach((_,ii) => { if(getSelfScore(currentTrainee,currentSheet,ci,ii)>=3) cDone++; });
@@ -684,7 +750,7 @@ function renderMyProgress() {
       h += `</div></div>`;
       if (admin > 0) {
         h += `<div style="display:flex;align-items:center;gap:6px">
-            <span style="font-size:10px;color:var(--green);font-weight:600;min-width:44px">教育者</span>
+            <span style="font-size:10px;color:var(--green);font-weight:600;min-width:44px">チーフ</span>
             <div style="display:flex;gap:4px">`;
         for(let n=1;n<=5;n++) h += `<div class="star admin-star-disp ${admin>=n?'admin-active':''}">${n}</div>`;
         h += `</div></div>`;
@@ -693,9 +759,8 @@ function renderMyProgress() {
     });
     h += '</div></div>';
   });
-
-  const el = document.getElementById('trainee-content');
-  if (el) el.innerHTML = h;
+  const catEl = document.getElementById('my-categories');
+  if (catEl) catEl.innerHTML = h;
 }
 
 function setMyScore(ci, ii, val) {
@@ -720,6 +785,7 @@ function toggleMyCat(ci) { const el=document.getElementById(`mcat-${ci}`); if(el
 
 // ===== 教育者モード：PCとスマホで切替 =====
 function renderAdminMainView() {
+  isMobile = window.innerWidth < 640;
   const dm = document.getElementById('desktop-main');
   const mc = document.getElementById('mobile-content');
   const dt = document.getElementById('desktop-tabs');
@@ -728,37 +794,29 @@ function renderAdminMainView() {
   if (isMobile) {
     if (dm) dm.style.display = 'none';
     if (dt) dt.style.display = 'none';
-    if (mc) mc.style.display = 'block';
     if (mn) mn.style.display = 'block';
-    renderMobileView();
+    if (mc) {
+      mc.style.display = 'block';
+      if (currentView === 'trainee') {
+        mc.innerHTML = '<div id="view-trainee"></div>';
+        renderTraineeView();
+      } else if (currentView === 'admin') {
+        mc.innerHTML = '<div id="view-admin"></div>';
+        renderAdminView();
+      } else if (currentView === 'settings') {
+        mc.innerHTML = '<div id="view-settings"></div>';
+        renderSettingsView();
+      }
+    }
   } else {
     if (dm) { dm.style.display = 'flex'; dm.style.flex = '1'; dm.style.overflow = 'hidden'; }
     if (dt) dt.style.display = 'flex';
     if (mc) mc.style.display = 'none';
     if (mn) mn.style.display = 'none';
     renderSidebar();
-    renderDesktopView();
-  }
-}
-
-function renderDesktopView() {
-  if (currentView === 'trainee') renderTraineeView();
-  else if (currentView === 'admin') renderAdminView();
-  else if (currentView === 'settings') renderSettingsView();
-}
-
-function renderMobileView() {
-  const mc = document.getElementById('mobile-content');
-  if (!mc) return;
-  if (currentView === 'trainee') {
-    mc.innerHTML = '<div id="view-trainee"></div>';
-    renderTraineeView();
-  } else if (currentView === 'admin') {
-    mc.innerHTML = '<div id="view-admin"></div>';
-    renderAdminView();
-  } else if (currentView === 'settings') {
-    mc.innerHTML = '<div id="view-settings"></div>';
-    renderSettingsView();
+    if (currentView === 'trainee') renderTraineeView();
+    else if (currentView === 'admin') renderAdminView();
+    else if (currentView === 'settings') renderSettingsView();
   }
 }
 
@@ -824,20 +882,18 @@ function renderTraineeView() {
     <div class="summary-pct">${overall}%</div>
     <div class="summary-sub">${doneItems} / ${totItems} 項目を習得済み</div>
     <div class="summary-bar"><div class="summary-bar-fill" style="width:${overall}%"></div></div>
-  </div>`;
+  </div>
+  <div id="admin-categories"></div>`;
 
-  // シートスクロール
-  h += '<div class="sheet-scroll">';
-  SHEETS_DATA.forEach(s => {
-    const p = sheetPct(currentTrainee, s.id);
-    h += `<button class="sheet-chip ${s.id===currentSheet?'active':''}" onclick="selSheet('${s.id}')">${s.title} ${p}%</button>`;
-  });
-  h += '</div>';
+  document.getElementById('view-trainee').innerHTML = h;
+  renderSheetTabNav();
+  renderAdminTraineeCategories();
+}
 
-  // カテゴリ
+function renderAdminTraineeCategories() {
   const sheet = SHEETS_DATA.find(s=>s.id===currentSheet);
-  h += `<div style="color:var(--text3);font-size:12px;margin-bottom:10px">${sheet.subtitle}</div>`;
-
+  if (!sheet) return;
+  let h = `<div style="color:var(--text3);font-size:12px;margin-bottom:10px">${sheet.subtitle}</div>`;
   sheet.categories.forEach((cat, ci) => {
     let cDone=0;
     cat.items.forEach((_,ii) => { if(getSelfScore(currentTrainee,currentSheet,ci,ii)>=3) cDone++; });
@@ -873,7 +929,9 @@ function renderTraineeView() {
     });
     h += '</div></div>';
   });
-  document.getElementById('view-trainee').innerHTML = h;
+  const catEl = document.getElementById('admin-categories');
+  if (catEl) catEl.innerHTML = h;
+  else document.getElementById('view-trainee').innerHTML = h;
 }
 
 function setAdminScore(ci, ii, val) {
