@@ -378,6 +378,9 @@ function buildApp(){
         <div class="logo">つなしまファミリー歯科 <span>スキルチェック</span></div>
         <button class="logout-btn" onclick="renderLogin()">ログアウト</button>
       </div>
+      <div class="pc-main">
+        <div class="pc-view" id="pc-view"></div>
+      </div>
       <div class="mob-content" id="main-content"></div>
       <nav class="bot-nav" id="bot-nav"></nav>
     </div>`;
@@ -423,29 +426,16 @@ function renderTraineeSelect(){
       <div><div style="font-size:15px;font-weight:600">${t.name}</div><div style="font-size:12px;color:var(--txt3)">${t.joined}入社</div></div>
     </button>`;
   });
-  renderIn('main-content',h+'</div>');
+  h+='</div>';
+  renderIn('pc-view',h);
+  renderIn('main-content',h);
   renderIn('bot-nav','');
 }
 function renderMyProgress(){
   if(!selfId){renderTraineeSelect();return;}
-  const t=TRAINEES.find(x=>x.id===selfId);
-  const overall=totalPct(selfId);
-  let tot=0,dn=0;
-  SHEETS.forEach(s=>s.categories.forEach((c,ci)=>c.items.forEach((_,ii)=>{tot++;if(getSelf(selfId,s.id,ci,ii))dn++;})));
-  let h=`
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-    <div class="avatar">${ini(t.name)}</div>
-    <div><div style="font-weight:600;font-size:15px">${t.name}</div><div style="font-size:12px;color:var(--txt3)">${t.joined}入社</div></div>
-    <button onclick="selfId=null;renderTraineeSelect()" style="margin-left:auto;border:1px solid var(--bdr2);border-radius:20px;padding:5px 11px;font-size:12px;color:var(--txt2);background:transparent;cursor:pointer;font-family:inherit">変更</button>
-  </div>
-  <div class="summary">
-    <div class="sum-pct">${overall}%</div>
-    <div class="sum-sub">${dn} / ${tot} 項目チェック済み</div>
-    <div class="sum-bar"><div class="sum-fill" style="width:${overall}%"></div></div>
-  </div>`;
-  h+=buildCategoryHTML(selfId,currentSheet,'trainee');
-  renderIn('main-content',h);
-  // ボトムナビ（シートタブ）
+  const html=buildAdminTraineeHTML(true);
+  renderIn('pc-view',html);
+  renderIn('main-content',html);
   renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="tSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
 }
 function tSelSheet(id){currentSheet=id;renderMyProgress();}
@@ -555,16 +545,16 @@ function aToggleChief(tid,sid,ci,ii){
   aSwitch(currentView);
 }
 
-// 教育者の衛生士タブ
-function buildAdminTraineeHTML(){
+// 教育者の衛生士タブ（isTraineeMode=trueなら衛生士モードとして使用）
+function buildAdminTraineeHTML(isTraineeMode){
   if(!selfId)selfId=TRAINEES[0]?.id;
   const t=TRAINEES.find(x=>x.id===selfId);
   const overall=totalPct(selfId);
-  // 衛生士セレクター
   let h='<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;-webkit-overflow-scrolling:touch;scrollbar-width:none">';
   TRAINEES.forEach(t2=>{
     const p=totalPct(t2.id);
-    h+=`<div onclick="aSelTrainee('${t2.id}')" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;cursor:pointer;padding:4px 6px;-webkit-tap-highlight-color:transparent">
+    const onclick=isTraineeMode?`selfId='${t2.id}';currentSheet='s1';renderMyProgress()`:`aSelTrainee('${t2.id}')`;
+    h+=`<div onclick="${onclick}" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;cursor:pointer;padding:4px 6px;-webkit-tap-highlight-color:transparent">
       <div class="avatar" style="${t2.id===selfId?'border:2.5px solid var(--acc)':''}">${ini(t2.name)}</div>
       <div style="font-size:11px;white-space:nowrap">${t2.name.split(/\s+/)[0]}</div>
       <div style="font-size:11px;font-weight:700;color:${pCol(p)}">${p}%</div>
@@ -578,12 +568,13 @@ function buildAdminTraineeHTML(){
     <div class="sum-bar"><div class="sum-fill" style="width:${overall}%"></div></div>
   </div>
   <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none">`;
+  const sheetSelectFn=isTraineeMode?`tSelSheet`:`aSelSheet`;
   SHEETS.forEach(s=>{
     const p=sheetPct(selfId,s.id);
-    h+=`<button onclick="aSelSheet('${s.id}')" style="flex-shrink:0;padding:6px 12px;border:1px solid ${s.id===currentSheet?'var(--acc)':'var(--bdr2)'};border-radius:20px;font-size:12px;cursor:pointer;background:${s.id===currentSheet?'var(--acc)':'var(--sur)'};color:${s.id===currentSheet?'#fff':'var(--txt2)'};white-space:nowrap;font-family:inherit">${s.subtitle} ${p}%</button>`;
+    h+=`<button onclick="${sheetSelectFn}('${s.id}')" style="flex-shrink:0;padding:6px 12px;border:1px solid ${s.id===currentSheet?'var(--acc)':'var(--bdr2)'};border-radius:20px;font-size:12px;cursor:pointer;background:${s.id===currentSheet?'var(--acc)':'var(--sur)'};color:${s.id===currentSheet?'#fff':'var(--txt2)'};white-space:nowrap;font-family:inherit">${s.subtitle} ${p}%</button>`;
   });
   h+='</div>';
-  h+=buildCategoryHTML(selfId,currentSheet,'admin');
+  h+=buildCategoryHTML(selfId,currentSheet,isTraineeMode?'trainee':'admin');
   return h;
 }
 
@@ -614,27 +605,7 @@ function buildAdminDashHTML(){
       <div style="font-size:24px;font-weight:700;color:${pCol(p)}">${p}%</div>
       <div style="font-size:12px;color:var(--txt2)">自己 ${selfDn} / チーフ ${chiefDn} / 全${tot}</div>
     </div>
-  </div>
-  <div class="graph-box">
-    <div class="graph-title">📊 シート別進捗（自己チェック）</div>`;
-  SHEETS.forEach(s=>{
-    const sp=sheetPct(adminSelected,s.id);
-    h+=`<div class="sp-row">
-      <div class="sp-name">${s.title}</div>
-      <div class="sp-bar"><div class="sp-fill ${pFill(sp)}" style="width:${sp}%"></div></div>
-      <div class="sp-pct" style="color:${pCol(sp)}">${sp}%</div>
-    </div>`;
-  });
-  h+=`</div><div class="graph-box"><div class="graph-title">🏆 スタッフ比較</div>`;
-  TRAINEES.forEach(tr=>{
-    const tp=totalPct(tr.id);
-    h+=`<div class="sp-row" style="cursor:pointer" onclick="aSelAdmin('${tr.id}')">
-      <div class="sp-name" style="font-weight:${tr.id===adminSelected?700:400}">${tr.name.split(/\s+/)[0]}</div>
-      <div class="sp-bar"><div class="sp-fill ${pFill(tp)}" style="width:${tp}%"></div></div>
-      <div class="sp-pct" style="color:${pCol(tp)}">${tp}%</div>
-    </div>`;
-  });
-  h+='</div>';
+  </div>`;
   // 全項目詳細
   SHEETS.forEach(s=>{
     h+=`<div class="ast-sheet"><div class="ast-head">${s.title}｜${s.subtitle}</div>`;
