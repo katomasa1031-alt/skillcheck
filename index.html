@@ -528,7 +528,7 @@ function aSwitchToTrainee(tid){
   adminSelected=tid;
   selfId=tid;
   currentView='admin';
-  currentSheet='s1';
+  currentSheet='s1'; // 人を切り替えた時だけs1に戻す
   if(window.innerWidth>=640){
     renderAdminPC();
   } else {
@@ -536,7 +536,16 @@ function aSwitchToTrainee(tid){
     renderAdminMob();
   }
 }
-function aSelSheet(id){currentSheet=id;aSwitch(currentView);}
+function aSelSheet(id){
+  currentSheet=id;
+  // シートだけ変えて再描画（人・viewはそのまま）
+  if(window.innerWidth>=640){
+    renderAdminPC();
+  } else {
+    updateAdminBotNav();
+    renderAdminMob();
+  }
+}
 function renderAdminMob(){
   if(currentView==='trainee') renderIn('main-content',buildAdminTraineeHTML());
   else if(currentView==='admin') renderIn('main-content',buildAdminPersonHTML());
@@ -555,14 +564,13 @@ function renderAdminPC(){
   else if(currentView==='settings') renderIn('pc-view',buildSettingsHTML());
 }
 function aSelTrainee(id){selfId=id;adminSelected=id;currentSheet='s1';aSwitch('trainee');}
-function aSelSheet(id){currentSheet=id;if(currentView==='admin')aSwitchToTrainee(adminSelected);else aSwitch('trainee');}
 function aSelAdmin(id){aSwitchToTrainee(id);}
 function aToggleChief(tid,sid,ci,ii){
   const cur=getChief(tid,sid,ci,ii);
   const nv=cur?0:1;
   setScoreData(tid,sid,ci,ii,'admin',nv);
   dbSaveScore(tid,sid,ci,ii,undefined,nv);
-  if(currentView==='admin')aSwitchToTrainee(adminSelected);else aSwitch(currentView);
+  if(window.innerWidth>=640){renderAdminPC();}else{renderAdminMob();}
 }
 
 // 教育者の衛生士タブ（isTraineeMode=trueなら衛生士モードとして使用）
@@ -616,7 +624,7 @@ function buildAdminPersonHTML(){
   <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none">`;
   SHEETS.forEach(s=>{
     const p=sheetPct(adminSelected,s.id);
-    h+=`<button onclick="currentSheet='${s.id}';aSwitchToTrainee('${adminSelected}')" style="flex-shrink:0;padding:6px 12px;border:1px solid ${s.id===currentSheet?'var(--acc)':'var(--bdr2)'};border-radius:20px;font-size:12px;cursor:pointer;background:${s.id===currentSheet?'var(--acc)':'var(--sur)'};color:${s.id===currentSheet?'#fff':'var(--txt2)'};white-space:nowrap;font-family:inherit">${s.subtitle} ${p}%</button>`;
+    h+=`<button onclick="aSelSheet('${s.id}')" style="flex-shrink:0;padding:6px 12px;border:1px solid ${s.id===currentSheet?'var(--acc)':'var(--bdr2)'};border-radius:20px;font-size:12px;cursor:pointer;background:${s.id===currentSheet?'var(--acc)':'var(--sur)'};color:${s.id===currentSheet?'#fff':'var(--txt2)'};white-space:nowrap;font-family:inherit">${s.subtitle} ${p}%</button>`;
   });
   h+='</div>';
   h+=buildCategoryHTML(adminSelected,currentSheet,'admin');
