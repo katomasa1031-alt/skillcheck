@@ -94,6 +94,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;backgroun
 .check-btn{width:44px;height:38px;border:1px solid var(--bdr2);border-radius:var(--rs);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;background:var(--sur);-webkit-tap-highlight-color:transparent;transition:all .12s}
 .check-btn.checked-self{background:var(--acc2);border-color:var(--acc)}
 .check-btn.checked-chief{background:var(--grn2);border-color:var(--grn)}
+.check-btn.checked-both{background:var(--grn2);border-color:var(--grn);color:var(--grn);font-size:20px}
 .check-btn.readonly{cursor:default}
 
 /* Admin view */
@@ -434,7 +435,11 @@ function renderMyProgress(){
   // ボトムナビ＝シートタブ
   renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="tSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
 }
-function tSelSheet(id){currentSheet=id;renderMyProgress();}
+function tSelSheet(id){
+  currentSheet=id;
+  renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="tSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
+  renderMyProgress();
+}
 function tToggleSelf(ci,ii){
   const cur=getSelf(selfId,currentSheet,ci,ii);
   const nv=cur?0:1;
@@ -462,8 +467,9 @@ function buildCategoryHTML(tid,sid,viewMode){
       h+=`<div class="task"><div class="task-row">
         <div class="task-txt ${sv&&av?'done':''}">${item}</div>`;
       if(viewMode==='trainee'){
-        // 衛生士：自己チェックボタン
-        h+=`<div class="check-btn ${sv?'checked-self':''}" onclick="tToggleSelf(${ci},${ii})">${sv?'✓':''}</div>`;
+        // 自己+教育者両方チェック済みなら◎、自己のみなら✓
+        const bothChecked = sv && av;
+        h+=`<div class="check-btn ${bothChecked?'checked-both':sv?'checked-self':''}" onclick="tToggleSelf(${ci},${ii})">${bothChecked?'◎':sv?'✓':''}</div>`;
       } else {
         // 教育者：衛生士チェック（読み取り）＋チーフチェック（常に表示）
         h+=`<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0">
@@ -538,11 +544,11 @@ function aSwitchToTrainee(tid){
 }
 function aSelSheet(id){
   currentSheet=id;
-  // シートだけ変えて再描画（人・viewはそのまま）
   if(window.innerWidth>=640){
     renderAdminPC();
   } else {
-    updateAdminBotNav();
+    // ボトムナビのactiveを更新
+    renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="aSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
     renderAdminMob();
   }
 }
