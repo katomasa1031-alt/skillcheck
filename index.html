@@ -38,7 +38,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;backgroun
 .pc-view{flex:1;overflow-y:auto;padding:20px}
 
 /* Mobile */
-.mob-content{flex:1;overflow-y:auto;padding:14px;padding-bottom:70px}
+.mob-content{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px;padding-bottom:70px;max-width:100%}
 .bot-nav{position:fixed;bottom:0;left:0;right:0;background:var(--sur);border-top:1px solid var(--bdr);z-index:50;display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .bot-nav::-webkit-scrollbar{display:none}
 .bot-btn{flex-shrink:0;padding:10px 14px;border:none;border-top:2px solid transparent;background:transparent;color:var(--txt3);font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
@@ -81,8 +81,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;backgroun
 /* Task items */
 .task{padding:12px 14px;border-bottom:1px solid var(--bdr)}
 .task:last-child{border-bottom:none}
-.task-row{display:flex;align-items:flex-start;gap:10px}
-.task-txt{flex:1;font-size:13px;line-height:1.55}
+.task-row{display:flex;align-items:flex-start;gap:8px;width:100%}
+.task-txt{flex:1;font-size:13px;line-height:1.55;min-width:0;word-break:break-all}
 .task-txt.done{color:var(--txt3);text-decoration:line-through}
 
 /* Check buttons */
@@ -97,8 +97,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;backgroun
 .check-btn.readonly{cursor:default}
 
 /* Admin view */
-.admin-wrap{display:flex;flex-direction:column;gap:14px}
-@media(min-width:640px){.admin-wrap{flex-direction:row;align-items:flex-start}.admin-list{width:260px;flex-shrink:0}.admin-detail{flex:1}}
+.admin-wrap{display:flex;flex-direction:column;gap:14px;width:100%;max-width:100%}
+@media(min-width:640px){.admin-wrap{flex-direction:row;align-items:flex-start}.admin-list{width:260px;flex-shrink:0}.admin-detail{flex:1;min-width:0}}
 .tc{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);padding:13px;margin-bottom:10px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .tc.sel{border-color:var(--acc);border-width:1.5px}
 .tc-top{display:flex;align-items:center;gap:10px;margin-bottom:9px}
@@ -258,9 +258,8 @@ const DEFAULT_SHEETS=[
     {name:'iTero',items:['スキャニングの設定ができる','必要性が理解でき説明できる','スキャニングできる','スキャンデータを患者さんへ見せて説明できる','他のスタッフへ指導/アドバイスができる']},
     {name:'ホワイトニング',items:['ホワイトニング/漂白のメカニズムと施術を理解している','ホワイトスポット/パンディング/クラック/テトラサイクリンで変色が認識できる','オフィス/ホームホワイトニングの内容・金額を理解できている','ホワイトニング希望の患者さんへカウンセリングができる','手順・注意事項を理解した上で施術できる','希望されていない患者さんにも提案/おすすめができる','Hysの強い患者さんへの対応ができる']}
   ]},
-  {id:'s6',title:'チェックシート⑥',subtitle:'歯周病精密検査・唾液検査・治療計画',categories:[
+  {id:'s6',title:'チェックシート⑥',subtitle:'歯周病精密検査・治療計画',categories:[
     {name:'P（精密検査）',items:['Pの流れを患者に説明できる','基本の検診・SPTの内容を把握できている','Pの流れ・保険のルールが理解できている','P検の記載ができる（1点・6点）','レントゲンを読影できる','歯周病についてツールを使用し説明することができる','歯周組織の病状について理解している','検査目的と方法を理解している','6点法にてP検査できる','病状の説明ができ、治療法を含め治療の流れを説明できる','全身疾患について説明できる','個々の患者さんの病状や生活背景に沿って必要な情報を提供できる','患者さんのモチベーションを上げることができる','生活習慣・食生活の指導ができる','他のスタッフへの指導・アドバイスができる']},
-    {name:'唾液検査',items:['カリエスの成り立ちを理解している','各検査を選び、患者さんに勧めることができる','SMT・オルコアの手順が分かる','SMT・オルコアの検査を行うことができる','データから正しい知識を患者さんに伝えることができる','検査をもとに、歯磨き指導・食事指導など患者さんにあった指導ができる','他のスタッフへの指導・アドバイスができ、トラブルに対応できる']},
     {name:'歯周病の治療計画立案・説明',items:['初期治療の処置の流れを理解している','Drや先輩DHと相談しながら治療計画を立案することができる','患者さんに正しい知識と治療計画を伝えることができる','自分で治療計画を立案することができる','個々の患者さんに応じた全身疾患を含めた歯周病の説明ができる','Drの治療計画および方針とほぼ一致した治療計画とメンテナンス計画を立案できる','自費治療を含めた最良の治療提案ができる','他のスタッフへの指導/アドバイスができる']}
   ]},
   {id:'s7',title:'チェックシート⑦',subtitle:'保険指導・歯周治療・PMTC',categories:[
@@ -403,11 +402,7 @@ function buildApp(){
         <div class="pc-view" id="pc-view"></div>
       </div>
       <div class="mob-content" id="main-content"></div>
-      <nav class="bot-nav" id="bot-nav" style="display:flex">
-        <button class="bot-btn" id="btab-trainee" onclick="aSwitch('trainee')">🩺 衛生士</button>
-        <button class="bot-btn" id="btab-admin" onclick="aSwitch('admin')">📊 教育者</button>
-        <button class="bot-btn" id="btab-settings" onclick="aSwitch('settings')">⚙️ 設定</button>
-      </nav>
+      <nav class="bot-nav" id="bot-nav" style="display:flex"></nav>
     </div>`;
     aSwitch(currentView);
   }
@@ -436,6 +431,7 @@ function renderMyProgress(){
   const html=buildAdminTraineeHTML(true);
   renderIn('pc-view',html);
   renderIn('main-content',html);
+  // ボトムナビ＝シートタブ
   renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="tSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
 }
 function tSelSheet(id){currentSheet=id;renderMyProgress();}
@@ -469,20 +465,17 @@ function buildCategoryHTML(tid,sid,viewMode){
         // 衛生士：自己チェックボタン
         h+=`<div class="check-btn ${sv?'checked-self':''}" onclick="tToggleSelf(${ci},${ii})">${sv?'✓':''}</div>`;
       } else {
-        // 教育者：自己チェック（読み取り）＋チーフチェックボタン
-        h+=`<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-          <div style="display:flex;align-items:center;gap:5px">
-            <span style="font-size:10px;color:var(--acc);font-weight:600">自己</span>
-            <div class="check-btn readonly ${sv?'checked-self':''}">${sv?'✓':''}</div>
-          </div>`;
-        if(sv){
-          // 自己チェック済みの場合のみチーフチェックを表示
-          h+=`<div style="display:flex;align-items:center;gap:5px">
-            <span style="font-size:10px;color:var(--grn);font-weight:600">チーフ</span>
-            <div class="check-btn ${av?'checked-chief':''}" onclick="aToggleChief('${tid}','${sid}',${ci},${ii})">${av?'✓':''}</div>
-          </div>`;
-        }
-        h+=`</div>`;
+        // 教育者：衛生士チェック（読み取り）＋チーフチェック（常に表示）
+        h+=`<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:11px;color:var(--acc);font-weight:600;min-width:36px;text-align:right">衛生士</span>
+            <div class="check-btn readonly ${sv?'checked-self':''}" style="width:36px;height:36px">${sv?'✓':''}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:11px;color:var(--grn);font-weight:600;min-width:36px;text-align:right">教育者</span>
+            <div class="check-btn ${av?'checked-chief':''}" onclick="aToggleChief('${tid}','${sid}',${ci},${ii})" style="width:36px;height:36px">${av?'✓':''}</div>
+          </div>
+        </div>`;
       }
       h+=`</div></div>`;
     });
@@ -501,12 +494,16 @@ function aSwitch(v){
     const el=document.getElementById('ptab-'+tab);
     if(el)el.className='tab-btn'+(tab===v?' active':'');
   });
-  // スマホタブ更新
-  ['trainee','admin','settings'].forEach(tab=>{
-    const el=document.getElementById('btab-'+tab);
-    if(el)el.className='bot-btn'+(tab===v?' active':'');
-  });
   if(isMob()){
+    // スマホ：衛生士タブ時はシートタブ、それ以外は教育者・設定ボタン
+    if(v==='trainee'){
+      renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="aSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
+    } else {
+      renderIn('bot-nav',`
+        <button class="bot-btn" id="btab-trainee" onclick="aSwitch('trainee')">🩺 衛生士</button>
+        <button class="bot-btn ${v==='admin'?'active':''}" id="btab-admin" onclick="aSwitch('admin')">📊 教育者</button>
+        <button class="bot-btn ${v==='settings'?'active':''}" id="btab-settings" onclick="aSwitch('settings')">⚙️ 設定</button>`);
+    }
     renderAdminMob();
   } else {
     renderAdminPC();
