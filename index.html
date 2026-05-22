@@ -353,7 +353,7 @@ function showPw(){
   renderIn('pw-area',`
   <div class="pw-box">
     <div style="font-size:13px;color:var(--txt2);margin-bottom:4px">パスワード</div>
-    <input class="pw-input" type="password" id="pw-inp" placeholder="••••" onkeydown="if(event.key==='Enter')checkPw()">
+    <input class="pw-input" type="password" inputmode="numeric" pattern="[0-9]*" id="pw-inp" placeholder="数字を入力" onkeydown="if(event.key==='Enter')checkPw()">
     <button class="pw-btn" onclick="checkPw()">ログイン</button>
     <div id="pw-err" style="color:var(--red);font-size:12px;margin-top:6px;display:none">パスワードが違います</div>
   </div>
@@ -364,7 +364,7 @@ function checkPw(){
   else{const e=document.getElementById('pw-err');if(e)e.style.display='block';}
 }
 function enterTrainee(){mode='trainee';currentSheet='s1';buildApp();}
-function enterAdmin(){mode='admin';currentView='admin';adminSelected=TRAINEES[0]?.id;buildApp();}
+function enterAdmin(){mode='admin';currentView='admin';adminSelected=TRAINEES[0]?.id;selfId=TRAINEES[0]?.id;currentSheet='s1';buildApp();}
 
 // ============================================================
 // BUILD APP SHELL
@@ -397,7 +397,7 @@ function buildApp(){
           <button class="tab-btn" id="ptab-settings" onclick="aSwitch('settings')">⚙ 設定</button>
         </div>
       </div>
-      <div class="pc-main">
+      <div class="pc-main" style="display:none">
         <div class="sidebar" id="pc-sidebar"></div>
         <div class="pc-view" id="pc-view"></div>
       </div>
@@ -489,57 +489,80 @@ function buildCategoryHTML(tid,sid,viewMode){
 // ============================================================
 function aSwitch(v){
   currentView=v;
-  // PCタブ更新
   ['trainee','admin','settings'].forEach(tab=>{
     const el=document.getElementById('ptab-'+tab);
     if(el)el.className='tab-btn'+(tab===v?' active':'');
   });
-  if(isMob()){
-    // スマホ：衛生士タブ時はシートタブ、それ以外は教育者・設定ボタン
-    if(v==='trainee'){
-      renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="aSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
-    } else {
-      renderIn('bot-nav',`
-        <button class="bot-btn" id="btab-trainee" onclick="aSwitch('trainee')">🩺 衛生士</button>
-        <button class="bot-btn ${v==='admin'?'active':''}" id="btab-admin" onclick="aSwitch('admin')">📊 教育者</button>
-        <button class="bot-btn ${v==='settings'?'active':''}" id="btab-settings" onclick="aSwitch('settings')">⚙️ 設定</button>`);
-    }
-    renderAdminMob();
-  } else {
+  const pcMain=document.getElementById('pc-sidebar')?.closest('.pc-main')||document.querySelector('.pc-main');
+  const mobContent=document.getElementById('main-content');
+  if(window.innerWidth>=640){
+    // PC
+    if(pcMain)pcMain.style.display='flex';
+    if(mobContent)mobContent.style.display='none';
+    const botNav=document.getElementById('bot-nav');
+    if(botNav)botNav.style.display='none';
     renderAdminPC();
+  } else {
+    // スマホ
+    if(pcMain)pcMain.style.display='none';
+    if(mobContent)mobContent.style.display='block';
+    const botNav=document.getElementById('bot-nav');
+    if(botNav)botNav.style.display='flex';
+    updateAdminBotNav();
+    renderAdminMob();
   }
 }
+function updateAdminBotNav(){
+  const v=currentView;
+  if(v==='trainee'){
+    // 衛生士チェックシート表示中はシートタブ
+    renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="aSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
+  } else {
+    // 4名の名前＋設定ボタン
+    let h=TRAINEES.map(t=>`<button class="bot-btn ${adminSelected===t.id&&v==='admin'?'active':''}" onclick="aSwitchToTrainee('${t.id}')">${t.name.split(/\s+/)[0]}</button>`).join('');
+    h+=`<button class="bot-btn ${v==='settings'?'active':''}" onclick="aSwitch('settings')">⚙️設定</button>`;
+    renderIn('bot-nav',h);
+  }
+}
+function aSwitchToTrainee(tid){
+  adminSelected=tid;
+  selfId=tid;
+  currentView='admin';
+  currentSheet='s1';
+  if(window.innerWidth>=640){
+    renderAdminPC();
+  } else {
+    updateAdminBotNav();
+    renderAdminMob();
+  }
+}
+function aSelSheet(id){currentSheet=id;aSwitch(currentView);}
 function renderAdminMob(){
   if(currentView==='trainee') renderIn('main-content',buildAdminTraineeHTML());
-  else if(currentView==='admin') renderIn('main-content',buildAdminDashHTML());
+  else if(currentView==='admin') renderIn('main-content',buildAdminPersonHTML());
   else if(currentView==='settings') renderIn('main-content',buildSettingsHTML());
 }
 function renderAdminPC(){
-  // サイドバー
-  let sb='';
-  if(currentView==='trainee'){
-    sb='<div class="sb-sec">衛生士</div>';
-    TRAINEES.forEach(t=>{
-      const p=totalPct(t.id);
-      sb+=`<div class="sb-item ${t.id===selfId?'active':''}" onclick="aSelTrainee('${t.id}')">${t.name}<span class="sb-pct" style="color:${pCol(p)}">${p}%</span></div>`;
-    });
-  } else {
-    sb='<div class="sb-sec">管理</div><div class="sb-item active">ダッシュボード</div>';
-  }
+  let sb='<div class="sb-sec">衛生士</div>';
+  TRAINEES.forEach(t=>{
+    const p=totalPct(t.id);
+    sb+=`<div class="sb-item ${t.id===adminSelected&&currentView==='admin'?'active':''}" onclick="aSwitchToTrainee('${t.id}')">${t.name}<span class="sb-pct" style="color:${pCol(p)}">${p}%</span></div>`;
+  });
+  if(currentView==='settings')sb='<div class="sb-sec">管理</div><div class="sb-item active">設定</div>';
   renderIn('pc-sidebar',sb);
-  if(currentView==='trainee') renderIn('pc-view',buildAdminTraineeHTML());
-  else if(currentView==='admin') renderIn('pc-view',buildAdminDashHTML());
+  if(currentView==='admin') renderIn('pc-view',buildAdminPersonHTML());
+  else if(currentView==='trainee') renderIn('pc-view',buildAdminTraineeHTML());
   else if(currentView==='settings') renderIn('pc-view',buildSettingsHTML());
 }
-function aSelTrainee(id){selfId=id;currentSheet='s1';aSwitch('trainee');}
-function aSelSheet(id){currentSheet=id;aSwitch('trainee');}
-function aSelAdmin(id){adminSelected=id;aSwitch('admin');}
+function aSelTrainee(id){selfId=id;adminSelected=id;currentSheet='s1';aSwitch('trainee');}
+function aSelSheet(id){currentSheet=id;if(currentView==='admin')aSwitchToTrainee(adminSelected);else aSwitch('trainee');}
+function aSelAdmin(id){aSwitchToTrainee(id);}
 function aToggleChief(tid,sid,ci,ii){
   const cur=getChief(tid,sid,ci,ii);
   const nv=cur?0:1;
   setScoreData(tid,sid,ci,ii,'admin',nv);
   dbSaveScore(tid,sid,ci,ii,undefined,nv);
-  aSwitch(currentView);
+  if(currentView==='admin')aSwitchToTrainee(adminSelected);else aSwitch(currentView);
 }
 
 // 教育者の衛生士タブ（isTraineeMode=trueなら衛生士モードとして使用）
@@ -575,55 +598,28 @@ function buildAdminTraineeHTML(isTraineeMode){
   return h;
 }
 
-// 教育者ダッシュボード
-function buildAdminDashHTML(){
+// 教育者が一人を選んで確認・入力する画面
+function buildAdminPersonHTML(){
   if(!adminSelected)adminSelected=TRAINEES[0]?.id;
-  let h='<div class="admin-wrap"><div class="admin-list">';
-  TRAINEES.forEach(t=>{
-    const p=totalPct(t.id);
-    h+=`<div class="tc ${t.id===adminSelected?'sel':''}" onclick="aSelAdmin('${t.id}')">
-      <div class="tc-top">
-        <div class="avatar">${ini(t.name)}</div>
-        <div style="flex:1"><div class="tc-name">${t.name}</div><div class="tc-sub">${t.joined}入社</div></div>
-        <div class="tc-pct" style="color:${pCol(p)}">${p}%</div>
-      </div>
-      <div class="ov-bar"><div class="ov-fill ${pFill(p)}" style="width:${p}%"></div></div>
-    </div>`;
-  });
-  h+='</div><div class="admin-detail"><div class="detail">';
+  selfId=adminSelected;
   const t=TRAINEES.find(x=>x.id===adminSelected);
-  const p=totalPct(adminSelected);
+  const overall=totalPct(adminSelected);
   let tot=0,selfDn=0,chiefDn=0;
   SHEETS.forEach(s=>s.categories.forEach((c,ci)=>c.items.forEach((_,ii)=>{tot++;if(getSelf(adminSelected,s.id,ci,ii))selfDn++;if(getChief(adminSelected,s.id,ci,ii))chiefDn++;})));
-  h+=`<div class="detail-top">
-    <div class="avatar" style="width:48px;height:48px;font-size:13px">${ini(t.name)}</div>
-    <div><div style="font-size:16px;font-weight:600">${t.name}</div><div style="font-size:12px;color:var(--txt2)">${t.joined}入社</div></div>
-    <div style="margin-left:auto;text-align:right">
-      <div style="font-size:24px;font-weight:700;color:${pCol(p)}">${p}%</div>
-      <div style="font-size:12px;color:var(--txt2)">自己 ${selfDn} / チーフ ${chiefDn} / 全${tot}</div>
-    </div>
-  </div>`;
-  // 全項目詳細
+  let h=`
+  <div class="summary">
+    <div style="font-size:12px;opacity:.8;margin-bottom:2px">${t.name}</div>
+    <div class="sum-pct">${overall}%</div>
+    <div class="sum-sub">自己 ${selfDn} / 教育者 ${chiefDn} / 全${tot}</div>
+    <div class="sum-bar"><div class="sum-fill" style="width:${overall}%"></div></div>
+  </div>
+  <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none">`;
   SHEETS.forEach(s=>{
-    h+=`<div class="ast-sheet"><div class="ast-head">${s.title}｜${s.subtitle}</div>`;
-    s.categories.forEach((cat,ci)=>{
-      h+=`<div class="ast-cat-name">${cat.name}</div>`;
-      cat.items.forEach((item,ii)=>{
-        const sv=getSelf(adminSelected,s.id,ci,ii);
-        const av=getChief(adminSelected,s.id,ci,ii);
-        const dc=sv&&av?'dot-both':sv?'dot-self':'dot-none';
-        const bd=sv&&av?'b-both':sv?'b-self':'b-none';
-        const bl=sv&&av?'両方✓':sv?'自己✓':'未';
-        h+=`<div class="ast-item">
-          <div class="dot ${dc}"></div>
-          <div style="flex:1;font-size:12px">${item}</div>
-          <span class="badge ${bd}">${bl}</span>
-        </div>`;
-      });
-    });
-    h+='</div>';
+    const p=sheetPct(adminSelected,s.id);
+    h+=`<button onclick="currentSheet='${s.id}';aSwitchToTrainee('${adminSelected}')" style="flex-shrink:0;padding:6px 12px;border:1px solid ${s.id===currentSheet?'var(--acc)':'var(--bdr2)'};border-radius:20px;font-size:12px;cursor:pointer;background:${s.id===currentSheet?'var(--acc)':'var(--sur)'};color:${s.id===currentSheet?'#fff':'var(--txt2)'};white-space:nowrap;font-family:inherit">${s.subtitle} ${p}%</button>`;
   });
-  h+='</div></div></div>';
+  h+='</div>';
+  h+=buildCategoryHTML(adminSelected,currentSheet,'admin');
   return h;
 }
 
