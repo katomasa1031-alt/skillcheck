@@ -41,7 +41,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;backgroun
 .mob-content{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px;padding-bottom:70px;max-width:100%}
 .bot-nav{position:fixed;bottom:0;left:0;right:0;background:var(--sur);border-top:1px solid var(--bdr);z-index:50;display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .bot-nav::-webkit-scrollbar{display:none}
-.bot-btn{flex-shrink:0;padding:10px 14px;border:none;border-top:2px solid transparent;background:transparent;color:var(--txt3);font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.bot-btn{flex-shrink:0;padding:13px 16px;border:none;border-top:2px solid transparent;background:transparent;color:var(--txt3);font-size:13px;font-family:inherit;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
 .bot-btn.active{color:var(--acc);border-top-color:var(--acc);font-weight:600;background:var(--acc2)}
 
 /* Login */
@@ -54,7 +54,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;backgroun
 .btn-primary{background:var(--acc);color:#fff}
 .btn-outline{background:var(--sur);color:var(--txt);border:1px solid var(--bdr2)}
 .pw-box{background:var(--sur);border:1px solid var(--bdr2);border-radius:var(--r);padding:16px;margin-top:8px}
-.pw-input{width:100%;padding:10px;border:1px solid var(--bdr2);border-radius:var(--rs);font-size:14px;font-family:inherit;margin:10px 0;-webkit-appearance:none}
+.pw-input{width:100%;padding:10px;border:1px solid var(--bdr2);border-radius:var(--rs);font-size:16px;font-family:inherit;margin:10px 0;-webkit-appearance:none}
 .pw-btn{width:100%;padding:12px;background:var(--acc);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
 
 /* Trainee select */
@@ -135,7 +135,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;backgroun
 .t-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--bdr)}
 .t-row:last-child{border-bottom:none}
 .t-fields{flex:1;display:flex;flex-direction:column;gap:5px}
-input[type=text]{border:1px solid var(--bdr2);border-radius:var(--rs);padding:8px 10px;font-size:14px;color:var(--txt);background:var(--bg);width:100%;font-family:inherit;-webkit-appearance:none}
+input[type=text]{border:1px solid var(--bdr2);border-radius:var(--rs);padding:8px 10px;font-size:16px;color:var(--txt);background:var(--bg);width:100%;font-family:inherit;-webkit-appearance:none}
 input[type=text]:focus{outline:none;border-color:var(--acc);background:var(--sur)}
 .btn{padding:9px 14px;border-radius:var(--rs);font-size:13px;cursor:pointer;border:1px solid var(--bdr2);background:var(--sur);color:var(--txt2);font-family:inherit}
 .btn-danger{border-color:#f7c1c1;color:var(--red);background:var(--red2)}
@@ -647,7 +647,7 @@ function buildSettingsHTML(){
   <div class="set-sec"><h2>📝 チェック項目の編集</h2>
   <div class="sheet-sel">`;
   SHEETS.forEach(s=>{
-    h+=`<button class="ss-btn ${s.id===settingsSheet?'active':''}" onclick="settingsSheet='${s.id}';aSwitch(currentView)">${s.title}</button>`;
+    h+=`<button class="ss-btn ${s.id===settingsSheet?'active':''}" onclick="settingsSheet='${s.id}';aSwitch(currentView)">${s.subtitle}</button>`;
   });
   h+=`</div>`;
   sheet.categories.forEach((cat,ci)=>{
