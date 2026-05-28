@@ -554,7 +554,6 @@ function aSelSheet(id){
   if(window.innerWidth>=640){
     renderAdminPC();
   } else {
-    renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="aSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
     renderAdminMob();
   }
   scrollToActiveTab();
