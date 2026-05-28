@@ -435,10 +435,17 @@ function renderMyProgress(){
   // ボトムナビ＝シートタブ
   renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="tSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
 }
+function scrollToActiveTab(){
+  setTimeout(()=>{
+    const tab=document.getElementById('stab-'+currentSheet);
+    if(tab)tab.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  },80);
+}
 function tSelSheet(id){
   currentSheet=id;
   renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="tSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
   renderMyProgress();
+  scrollToActiveTab();
 }
 function tToggleSelf(ci,ii){
   const cur=getSelf(selfId,currentSheet,ci,ii);
@@ -547,10 +554,10 @@ function aSelSheet(id){
   if(window.innerWidth>=640){
     renderAdminPC();
   } else {
-    // ボトムナビのactiveを更新
     renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="aSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
     renderAdminMob();
   }
+  scrollToActiveTab();
 }
 function renderAdminMob(){
   if(currentView==='trainee') renderIn('main-content',buildAdminTraineeHTML());
@@ -601,11 +608,11 @@ function buildAdminTraineeHTML(isTraineeMode){
     <div class="sum-sub">自己チェック済み</div>
     <div class="sum-bar"><div class="sum-fill" style="width:${overall}%"></div></div>
   </div>
-  <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none">`;
+  <div id="sheet-tabs-top" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none">`;
   const sheetSelectFn=isTraineeMode?`tSelSheet`:`aSelSheet`;
   SHEETS.forEach(s=>{
     const p=sheetPct(selfId,s.id);
-    h+=`<button onclick="${sheetSelectFn}('${s.id}')" style="flex-shrink:0;padding:6px 12px;border:1px solid ${s.id===currentSheet?'var(--acc)':'var(--bdr2)'};border-radius:20px;font-size:12px;cursor:pointer;background:${s.id===currentSheet?'var(--acc)':'var(--sur)'};color:${s.id===currentSheet?'#fff':'var(--txt2)'};white-space:nowrap;font-family:inherit">${s.subtitle} ${p}%</button>`;
+    h+=`<button id="stab-${s.id}" onclick="${sheetSelectFn}('${s.id}')" style="flex-shrink:0;padding:6px 12px;border:1px solid ${s.id===currentSheet?'var(--acc)':'var(--bdr2)'};border-radius:20px;font-size:12px;cursor:pointer;background:${s.id===currentSheet?'var(--acc)':'var(--sur)'};color:${s.id===currentSheet?'#fff':'var(--txt2)'};white-space:nowrap;font-family:inherit">${s.subtitle} ${p}%</button>`;
   });
   h+='</div>';
   h+=buildCategoryHTML(selfId,currentSheet,isTraineeMode?'trainee':'admin');
@@ -627,10 +634,10 @@ function buildAdminPersonHTML(){
     <div class="sum-sub">自己 ${selfDn} / 教育者 ${chiefDn} / 全${tot}</div>
     <div class="sum-bar"><div class="sum-fill" style="width:${overall}%"></div></div>
   </div>
-  <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none">`;
+  <div id="sheet-tabs-top" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none">`;
   SHEETS.forEach(s=>{
     const p=sheetPct(adminSelected,s.id);
-    h+=`<button onclick="aSelSheet('${s.id}')" style="flex-shrink:0;padding:6px 12px;border:1px solid ${s.id===currentSheet?'var(--acc)':'var(--bdr2)'};border-radius:20px;font-size:12px;cursor:pointer;background:${s.id===currentSheet?'var(--acc)':'var(--sur)'};color:${s.id===currentSheet?'#fff':'var(--txt2)'};white-space:nowrap;font-family:inherit">${s.subtitle} ${p}%</button>`;
+    h+=`<button id="stab-${s.id}" onclick="aSelSheet('${s.id}')" style="flex-shrink:0;padding:6px 12px;border:1px solid ${s.id===currentSheet?'var(--acc)':'var(--bdr2)'};border-radius:20px;font-size:12px;cursor:pointer;background:${s.id===currentSheet?'var(--acc)':'var(--sur)'};color:${s.id===currentSheet?'#fff':'var(--txt2)'};white-space:nowrap;font-family:inherit">${s.subtitle} ${p}%</button>`;
   });
   h+='</div>';
   h+=buildCategoryHTML(adminSelected,currentSheet,'admin');
