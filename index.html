@@ -161,6 +161,7 @@ input[type=text]:focus{outline:none;border-color:var(--acc);background:var(--sur
   .pc-main{display:flex}
   .mob-content,.bot-nav{display:none!important}
   .pc-view{padding:24px}
+  #register-fab{bottom:20px!important;max-width:400px;left:50%!important;right:auto!important;transform:translateX(-50%)}
 }
 </style>
 </head>
@@ -382,6 +383,7 @@ function buildApp(){
         <div class="pc-view" id="pc-view"></div>
       </div>
       <div class="mob-content" id="main-content"></div>
+      <button id="register-fab" onclick="manualSave(this)" style="display:none;position:fixed;left:14px;right:14px;bottom:64px;z-index:60;background:var(--acc);color:#fff;border:none;border-radius:24px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;gap:6px">📝 登録</button>
       <nav class="bot-nav" id="bot-nav"></nav>
     </div>`;
     if(!selfId)renderTraineeSelect();
@@ -426,6 +428,8 @@ function renderTraineeSelect(){
   renderIn('pc-view',h);
   renderIn('main-content',h);
   renderIn('bot-nav','');
+  const fab=document.getElementById('register-fab');
+  if(fab)fab.style.display='none';
 }
 function renderMyProgress(){
   if(!selfId){renderTraineeSelect();return;}
@@ -434,6 +438,8 @@ function renderMyProgress(){
   renderIn('main-content',html);
   // ボトムナビ＝シートタブ
   renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="tSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
+  const fab=document.getElementById('register-fab');
+  if(fab)fab.style.display='flex';
 }
 function scrollToActiveTab(){
   setTimeout(()=>{
@@ -453,6 +459,31 @@ function tToggleSelf(ci,ii){
   setScoreData(selfId,currentSheet,ci,ii,'self',nv);
   dbSaveScore(selfId,currentSheet,ci,ii,nv,undefined);
   renderMyProgress();
+}
+
+// 登録ボタン：現在のシートの全項目を再送信し、完了フィードバックを表示
+async function manualSave(btn){
+  if(!selfId)return;
+  const orig=btn.innerHTML;
+  btn.innerHTML='⏳ 登録中...';
+  btn.disabled=true;
+  const sheet=SHEETS.find(s=>s.id===currentSheet);
+  if(sheet){
+    const tasks=[];
+    sheet.categories.forEach((cat,ci)=>{
+      cat.items.forEach((_,ii)=>{
+        const sv=getSelf(selfId,currentSheet,ci,ii);
+        tasks.push(dbSaveScore(selfId,currentSheet,ci,ii,sv,undefined));
+      });
+    });
+    await Promise.all(tasks);
+  }
+  btn.innerHTML='✓ 登録しました';
+  toast('登録しました');
+  setTimeout(()=>{
+    btn.innerHTML=orig;
+    btn.disabled=false;
+  },1500);
 }
 
 // カテゴリHTML生成（衛生士・教育者共通）
