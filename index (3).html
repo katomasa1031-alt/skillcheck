@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>衛生士スキルチェック</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f6f3;--sur:#fff;--sur2:#f2f0ec;
+  --bdr:rgba(0,0,0,.1);--bdr2:rgba(0,0,0,.18);
+  --txt:#1a1a18;--txt2:#5a5a55;--txt3:#999990;
+  --acc:#3d6b8c;--acc2:#e8f1f7;
+  --grn:#3b6d11;--grn2:#eaf3de;
+  --pur:#534ab7;--pur2:#eeedfe;
+  --red:#a32d2d;--red2:#fcebeb;
+  --r:10px;--rs:6px;
+}
+body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:var(--txt);font-size:14px;line-height:1.6;-webkit-text-size-adjust:100%}
+
+.app{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+.topbar{background:var(--sur);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 14px;height:50px;flex-shrink:0;position:sticky;top:0;z-index:50}
+.logo{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.logo span{color:var(--acc)}
+.logout-btn{margin-left:auto;flex-shrink:0;background:transparent;border:none;font-size:12px;color:var(--txt3);cursor:pointer;padding:4px 8px}
+.pc-tabs{display:none;gap:6px;margin-left:10px;flex-shrink:0}
+.tab-btn{padding:6px 14px;border:1px solid var(--bdr2);border-radius:20px;font-size:13px;cursor:pointer;background:transparent;color:var(--txt2);font-family:inherit}
+.tab-btn.active{background:var(--acc);color:#fff;border-color:var(--acc)}
+
+/* PC layout */
+.pc-main{display:none;flex:1;overflow:hidden}
+.sidebar{width:200px;flex-shrink:0;background:var(--sur);border-right:1px solid var(--bdr);overflow-y:auto;padding:10px 0}
+.sb-sec{padding:4px 12px;font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:.06em;margin-top:8px}
+.sb-item{display:flex;align-items:center;gap:8px;padding:8px 14px;cursor:pointer;font-size:13px;color:var(--txt2);border-left:3px solid transparent;transition:all .12s}
+.sb-item:hover{background:var(--sur2)}
+.sb-item.active{background:var(--acc2);color:var(--acc);border-left-color:var(--acc);font-weight:500}
+.sb-pct{margin-left:auto;font-size:11px;font-weight:600}
+.pc-view{flex:1;overflow-y:auto;padding:20px}
+
+/* Mobile */
+.mob-content{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px;padding-bottom:70px;max-width:100%}
+.bot-nav{position:fixed;bottom:0;left:0;right:0;background:var(--sur);border-top:1px solid var(--bdr);z-index:50;display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.bot-nav::-webkit-scrollbar{display:none}
+.bot-btn{flex-shrink:0;padding:13px 16px;border:none;border-top:2px solid transparent;background:transparent;color:var(--txt3);font-size:13px;font-family:inherit;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.bot-btn.active{color:var(--acc);border-top-color:var(--acc);font-weight:600;background:var(--acc2)}
+
+/* Login */
+.login-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.login-box{width:100%;max-width:340px}
+.login-icon{font-size:36px;text-align:center;margin-bottom:10px}
+.login-title{font-size:18px;font-weight:700;text-align:center;margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--txt3);text-align:center;margin-bottom:28px}
+.login-btn{width:100%;padding:16px;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px}
+.btn-primary{background:var(--acc);color:#fff}
+.btn-outline{background:var(--sur);color:var(--txt);border:1px solid var(--bdr2)}
+.pw-box{background:var(--sur);border:1px solid var(--bdr2);border-radius:var(--r);padding:16px;margin-top:8px}
+.pw-input{width:100%;padding:10px;border:1px solid var(--bdr2);border-radius:var(--rs);font-size:16px;font-family:inherit;margin:10px 0;-webkit-appearance:none}
+.pw-btn{width:100%;padding:12px;background:var(--acc);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+
+/* Trainee select */
+.sel-btn{display:flex;align-items:center;gap:12px;padding:14px;background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);cursor:pointer;margin-bottom:8px;width:100%;font-family:inherit;text-align:left;-webkit-tap-highlight-color:transparent}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--pur2);color:var(--pur);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+
+/* Summary */
+.summary{background:var(--acc);color:#fff;border-radius:var(--r);padding:14px;margin-bottom:14px}
+.sum-pct{font-size:34px;font-weight:700;line-height:1;margin-bottom:4px}
+.sum-sub{font-size:12px;opacity:.8;margin-bottom:8px}
+.sum-bar{height:5px;border-radius:3px;background:rgba(255,255,255,.3);overflow:hidden}
+.sum-fill{height:100%;border-radius:3px;background:#fff;transition:width .4s}
+
+/* Category cards */
+.cat-card{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.cat-head{display:flex;align-items:center;gap:8px;padding:12px 14px}
+.cat-name{font-weight:600;font-size:13px;flex:1}
+.cat-prog{font-size:12px;font-weight:600;color:var(--txt2)}
+.cat-bar-w{width:50px;flex-shrink:0}
+.cat-bar{height:4px;border-radius:2px;background:var(--sur2);overflow:hidden}
+.cat-bar-f{height:100%;border-radius:2px;background:var(--acc);transition:width .3s}
+.cat-body{border-top:1px solid var(--bdr)}
+
+/* Task items */
+.task{padding:12px 14px;border-bottom:1px solid var(--bdr)}
+.task:last-child{border-bottom:none}
+.task-row{display:flex;align-items:flex-start;gap:8px;width:100%}
+.task-txt{flex:1;font-size:13px;line-height:1.55;min-width:0;word-break:break-all}
+.task-txt.done{color:var(--txt3);text-decoration:line-through}
+
+/* Check buttons */
+.check-area{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.check-row{display:flex;align-items:center;gap:8px}
+.check-lbl{font-size:11px;font-weight:600;min-width:52px;flex-shrink:0}
+.lbl-self{color:var(--acc)}
+.lbl-chief{color:var(--grn)}
+.check-btn{width:44px;height:38px;border:1px solid var(--bdr2);border-radius:var(--rs);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;background:var(--sur);-webkit-tap-highlight-color:transparent;transition:all .12s}
+.check-btn.checked-self{background:var(--acc2);border-color:var(--acc)}
+.check-btn.checked-chief{background:var(--grn2);border-color:var(--grn)}
+.check-btn.checked-both{background:var(--grn2);border-color:var(--grn);color:var(--grn);font-size:20px}
+.check-btn.readonly{cursor:default}
+
+/* Admin view */
+.admin-wrap{display:flex;flex-direction:column;gap:14px;width:100%;max-width:100%}
+@media(min-width:640px){.admin-wrap{flex-direction:row;align-items:flex-start}.admin-list{width:260px;flex-shrink:0}.admin-detail{flex:1;min-width:0}}
+.tc{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);padding:13px;margin-bottom:10px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.tc.sel{border-color:var(--acc);border-width:1.5px}
+.tc-top{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.tc-name{font-weight:600;font-size:14px}
+.tc-sub{font-size:12px;color:var(--txt3)}
+.tc-pct{font-size:20px;font-weight:700;margin-left:auto}
+.ov-bar{height:6px;border-radius:3px;background:var(--sur2);overflow:hidden}
+.ov-fill{height:100%;border-radius:3px}
+.fill-g{background:var(--grn)}.fill-a{background:#ef9f27}.fill-r{background:var(--red)}
+.detail{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);padding:16px}
+.detail-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--bdr)}
+.graph-box{background:var(--sur2);border-radius:var(--r);padding:13px;margin-bottom:12px}
+.graph-title{font-size:12px;font-weight:700;color:var(--txt2);margin-bottom:10px}
+.sp-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.sp-name{font-size:12px;min-width:100px;color:var(--txt2)}
+.sp-bar{flex:1;height:12px;background:var(--sur);border-radius:6px;overflow:hidden}
+.sp-fill{height:100%;border-radius:6px;transition:width .4s}
+.sp-pct{font-size:11px;font-weight:700;min-width:30px;text-align:right}
+.ast-sheet{margin-top:16px}
+.ast-head{font-size:13px;font-weight:600;color:var(--txt2);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bdr)}
+.ast-cat-name{font-size:11px;font-weight:600;color:var(--txt3);margin:10px 0 5px;letter-spacing:.05em}
+.ast-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr);font-size:13px}
+.ast-item:last-child{border-bottom:none}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-both{background:var(--grn)}.dot-self{background:#ef9f27}.dot-none{background:#ccc}
+.badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:9px;font-weight:600;flex-shrink:0}
+.b-both{background:var(--grn2);color:var(--grn)}
+.b-self{background:#faeeda;color:#854f0b}
+.b-none{background:var(--sur2);color:var(--txt3)}
+
+/* Settings */
+.set-sec{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.set-sec h2{font-size:14px;font-weight:600;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--bdr)}
+.t-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--bdr)}
+.t-row:last-child{border-bottom:none}
+.t-fields{flex:1;display:flex;flex-direction:column;gap:5px}
+input[type=text]{border:1px solid var(--bdr2);border-radius:var(--rs);padding:8px 10px;font-size:16px;color:var(--txt);background:var(--bg);width:100%;font-family:inherit;-webkit-appearance:none}
+input[type=text]:focus{outline:none;border-color:var(--acc);background:var(--sur)}
+.btn{padding:9px 14px;border-radius:var(--rs);font-size:13px;cursor:pointer;border:1px solid var(--bdr2);background:var(--sur);color:var(--txt2);font-family:inherit}
+.btn-danger{border-color:#f7c1c1;color:var(--red);background:var(--red2)}
+.btn-acc{background:var(--acc);color:#fff;border-color:var(--acc)}
+.btn-sm{padding:6px 10px;font-size:12px}
+.info-box{background:var(--acc2);border:1px solid #b8d4e8;border-radius:var(--rs);padding:10px 13px;font-size:13px;color:var(--acc);margin-bottom:13px;line-height:1.6}
+.sheet-sel{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.ss-btn{padding:5px 10px;border:1px solid var(--bdr2);border-radius:14px;font-size:12px;cursor:pointer;background:var(--sur);color:var(--txt2);font-family:inherit}
+.ss-btn.active{background:var(--acc);color:#fff;border-color:var(--acc)}
+.edit-cat{border:1px solid var(--bdr);border-radius:var(--rs);margin-bottom:10px;overflow:hidden}
+.edit-cat-head{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--sur2)}
+.edit-items{padding:8px 12px}
+.edit-item-row{display:flex;align-items:center;gap:6px;padding:4px 0}
+.edit-item-row input{flex:1}
+
+/* toast */
+.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);background:var(--txt);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+
+@media(min-width:640px){
+  .pc-tabs{display:flex}
+  .pc-main{display:flex}
+  .mob-content,.bot-nav{display:none!important}
+  .pc-view{padding:24px}
+  #register-fab{bottom:20px!important;max-width:400px;left:50%!important;right:auto!important;transform:translateX(-50%)}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="toast" id="toast"></div>
+<script>
+// ============================================================
+// SUPABASE
+// ============================================================
+const SB_URL='https://flyjqpbapabwykyqtaye.supabase.co';
+const SB_KEY='sb_publishable_zA9ZyYRQN_wHSmh1OXOWKg_1GYVG_Jb';
+async function sbFetch(path,opts={}){
+  const res=await fetch(SB_URL+path,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})},method:opts.method||'GET',body:opts.body});
+  const t=await res.text();
+  if(!res.ok){
+    console.error('Supabase error',res.status,t);
+    throw new Error('SB_ERROR_'+res.status+': '+t);
+  }
+  return t?JSON.parse(t):null;
+}
+async function dbGet(key){try{const r=await sbFetch(`/rest/v1/settings?key=eq.${encodeURIComponent(key)}&select=value`);return r?.length?r[0].value:null;}catch(e){console.error('dbGet失敗',e);return null;}}
+async function dbSet(key,value){try{await sbFetch('/rest/v1/settings',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify({key,value,updated_at:new Date().toISOString()})});}catch(e){console.error('dbSet失敗',e);}}
+async function dbGetScores(){
+  try{
+    const rows=await sbFetch('/rest/v1/scores?select=*&limit=10000');
+    const r={};
+    (rows||[]).forEach(row=>{
+      if(!r[row.trainee_id])r[row.trainee_id]={};
+      if(!r[row.trainee_id][row.sheet_id])r[row.trainee_id][row.sheet_id]={};
+      if(!r[row.trainee_id][row.sheet_id][row.cat_index])r[row.trainee_id][row.sheet_id][row.cat_index]={};
+      r[row.trainee_id][row.sheet_id][row.cat_index][row.item_index]={self:row.self_score||0,admin:row.admin_score||0};
+    });
+    console.log('スコア読み込み件数:',rows?.length||0);
+    return r;
+  }catch(e){console.error('dbGetScores失敗',e);return {};}
+}
+async function dbSaveScore(tid,sid,ci,ii,self,admin){
+  const id=`${tid}__${sid}__${ci}__${ii}`;
+  const body={id,trainee_id:tid,sheet_id:sid,cat_index:ci,item_index:ii,updated_at:new Date().toISOString()};
+  if(self!==undefined)body.self_score=self;
+  if(admin!==undefined)body.admin_score=admin;
+  try{
+    await sbFetch('/rest/v1/scores',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify(body)});
+  }catch(e){
+    console.error('dbSaveScore失敗',id,e);
+    toast('⚠ 保存に失敗しました（通信を確認してください）');
+  }
+}
+
+// ============================================================
+// DATA
+// ============================================================
+const DEFAULT_TRAINEES=[
+  {id:'t1',name:'戸羽 陽花',joined:'2026年4月'},
+  {id:'t2',name:'土屋 涼寧',joined:'2026年4月'},
+  {id:'t3',name:'柏木 結希',joined:'2026年4月'},
+  {id:'t4',name:'露木 紗奈',joined:'2026年4月'}
+];
+const DEFAULT_SHEETS=[
+  {id:'s1',title:'チェックシート①',subtitle:'挨拶・患者対応・カルテ・口腔内写真',categories:[
+    {name:'挨拶 身だしなみ',items:['挨拶／言繋づかい／敬語等医療従事者としての基本が身についている','スタッフ間の挨拶が自ら出来る','医療従事者としての身だしなみが整っている']},
+    {name:'患者対応',items:['誘導前にチェアの準備（治療準備）がすべてできる（パノラマ/基本セット/カルテ確認まで）','全ての患者さんに笑顔で元気よく対応ができる','患者さんをユニットへ誘導できる','体の不自由な患者さんに対して配慮できる','治療内容について患者さんへ説明ができる','専門用語を使わずに説明ができる','患者さんが通いたい/通わなくては！と思えるような説明ができる','時間通りに誘導できる','患者さんの歯科に対する意識を上げるような説明ができる','患者さんの隠れた主訴を見つけ、くみ取ることができる','周囲に気配りができる','患者さんに上手く伝えることができるか意識して考え、ツールなどを利用して提案することができる','臨機応変に対応できる','初診の問診・カウンセリングが時間内にでき処置がおこなえる','再初診の問診が時間内にでき処置がおこなえる']},
+    {name:'カルテ',items:['トリートメントプランの記載・読解できる','口腔内チェック/P検の記載後のトリートメントプランへの各チェックができる','記載/検査記録/補助録などの重要性を理解できる','専門用語を理解し記録から治療や管理の経過を把握することができる','他のスタッフが見ても分かり易く整理された補助録作成と共有ができる','情報を整理し重要事項を漏らさずポイントを押さえた記録ができる']},
+    {name:'口腔内写真',items:['隣のチェアへの配慮ができる','撮影方法を教えてもらう','口腔内写真をパソコンに読み込む事ができる','口腔内写真に合格できた（5分以内に規格通り正しく撮影できる）','スムーズに撮影できる','口腔内写真を見て患者さんに説明できる','撮影方法を指導できる','写真を撮る意味を伝えることができる']}
+  ]},
+  {id:'s2',title:'チェックシート②',subtitle:'アポイント・レントゲン・治療基礎',categories:[
+    {name:'アポイント',items:['ユニット案内前にパントモを表示案内後、診のマークを付けることができる','アポツールの見方と操作方法がわかる','守秘義務を理解している','アポツールで担当患者さんの次回の予約を取ることができる','Drの治療/カウンセリング／P処置の予約を取ることができる','必要なコメントをアポツールに入れることができる','治療内容によって予約を振り分けることができる']},
+    {name:'デンタル・パノラマ',items:['被ばく線量が理解でき、ツールを使用し説明できる','レントゲンの種類を理解し正しくモニターに出すことができる','デンタルのセッティング/位置/保存/使用後の片づけができる','パントモのセッティング/位置/保存ができる','デンタル/パントモを規格通りに撮影準備できる','デンタル/パントモの読影ができ、患者さんへ説明することができる']},
+    {name:'CT',items:['CT撮影の注意点/説明が理解できている','モニターにCT画像を正しく出すことができる','CT撮影準備/位置/保存ができる','CT画像を患者さんへ説明できる','他のスタッフへの指導/アドバイスができる']},
+    {name:'麻酔',items:['トリートメントプランを確認し麻酔の準備ができる','説明→OAまで準備/アシスタントができる']},
+    {name:'CR',items:['CRの準備/説明/アシスタントができる']},
+    {name:'圧排',items:['圧排の意味と方法を理解している','処置に必要な器具準備できる','圧排ができる','複数歯でもスピーディーに圧排できる','歯根近接や薄い歯肉の圧排ができる','他のスタッフへの指導/アドバイスができる']},
+    {name:'単治',items:['準備ができる','単純窩洞の充填ができる','複雑窩洞の充填ができる','他のスタッフへの指導/アドバイスができる']}
+  ]},
+  {id:'s3',title:'チェックシート③',subtitle:'根管治療・抜歯・補綴',categories:[
+    {name:'PE',items:['浸麻→P-ext/除去してRCT→Crセットまでの流れを理解できている','P-extで使用する器具・薬品を準備でき治療の流れを理解できている','P-extの準備/治療説明/アシスタントが一人でできる','P-ext治療後の偶発症状について説明できる']},
+    {name:'RCT',items:['RCTの準備/治療説明/アシスタントができる']},
+    {name:'RCF',items:['RCFの準備/治療説明/アシスタントができる','RCFの治療後の注意事項/偶発症状が理解でき説明できる']},
+    {name:'根治共通',items:['各処置後の次回の予定が理解できている']},
+    {name:'EXT',items:['EXT準備/処置前説明・体調確認・治療説明・同意書/アシスタントができる','EXT後の注意事項/投薬説明ができる']},
+    {name:'SP/抜歯',items:['SP/抜糸のアシスタントができる']},
+    {name:'ドライソケット',items:['ドライソケットについて理解し説明することができる','ドライソケット処置の準備/アシスタントができる']},
+    {name:'補綴',items:['アルジネートの練和ができる','印象材を正しく計量し、適切な印象材を練ることができる','印象硬化待ち中の患者さんへ配慮ができる','片顎印象ができる','治療内容によって印象材を判断することができる（アルジネート/シリコン/スキャニング）','全顎印象ができる','全ての印象がミスなく採得できミスに対し対応することができる','補綴の種類が理解できている','補綴の種類について特徴含め説明することができる']}
+  ]},
+  {id:'s4',title:'チェックシート④',subtitle:'インレー・クラウン・デンチャー',categories:[
+    {name:'In imp',items:['In kp impの準備/治療説明/アシスタント/トレー選択ができる','アルジネートで対合impができる','アルジネート・寒天で本印象/ワックスBTがとれる','デュラシール・フィットシール・クイックフロー仮封ができる','治療後の説明/注意事項/次回説明/set金額が伝えられる']},
+    {name:'In set',items:['In setの準備/アシスタント/set後の注意の説明ができる','複雑窩洞の試適ができる','再製の判断ができる','Drの指示で調整できる','セメントアウトできる']},
+    {name:'FMC/CAD・前装MC・Br imp',items:['FMC/CADCAM/前装MC/Bz pz impの準備/治療説明/アシストができる','片顎/全顎トレー選択し対合impをとることができる','アルジネート・寒天で本印象/ワックスBTがとれる','Tecをリムーバーで外すことができる','Tec仮着ができる','Tecのウォッシュができる','治療後の説明/注意事項/次回説明/set金額が伝えられる','補助録へのFMC/CADCAM/前装MC/Br impの記載ができる']},
+    {name:'Cr set',items:['Setのアシスタント、set後の注意事項の説明ができる','セメントアウトできる']},
+    {name:'Cr 共通',items:['単治/仮封（デュラシール・フィットシール・クイックフロー・キャビトン）/Tecウォッシュを他のスタッフへ指導/アドバイスができる']},
+    {name:'デンチャー',items:['PD/FD Setまでの流れが理解し説明できる']},
+    {name:'デンチャー imp',items:['デンチャー概形impが出来る（個人トレー）','精密impの準備・説明・アシスタントができる']},
+    {name:'BT',items:['BTの準備/説明/アシスタントができる']},
+    {name:'TF',items:['TFの準備/説明/アシスタントができる']},
+    {name:'デンチャー Set',items:['Setの準備・説明・アシスタントができる','Set後の取り扱い/注意事項/お手入れについて説明ができる']}
+  ]},
+  {id:'s5',title:'チェックシート⑤',subtitle:'義歯・シーラント・自費・ホワイトニング',categories:[
+    {name:'義歯調整',items:['デンチャー調整の準備/アシスタントができる']},
+    {name:'ナイトガード imp',items:['ナイトガードの必要性/作製手順を理解している','ナイトガードimp（全顎）ができる','オプテックへのナイトガードimpの入力ができる']},
+    {name:'ナイトガード set',items:['ナイトガードの取り扱い/注意事項/お手入れについて説明できる','オプテックへナイトガードsetの入力ができる']},
+    {name:'シーラント',items:['シーラントの効果を理解でき必要性を説明できる','シーラント処置ができる','シーラント処置後の説明・注意点を説明できる（保護者に）','非協力児に対してもシーラント処置ができる','仕上げ磨きを含めた口腔衛生状態や歯牙形態からシーラントの必要があるか判断できる']},
+    {name:'自費補綴',items:['補綴の種類/特徴について理解できている','自費補綴についてカウンセリングすることができる','オプテックで見積もりを作成できる','自費カルテの内容把握/記載ができる','患者さんへ自費補綴setの金額説明をすることができる']},
+    {name:'ファイバーコア',items:['ファイバーコア築造の準備・説明・アシスタントができる']},
+    {name:'セラミックインレー',items:['セラミックIn kp impの準備・説明・アシスタントができる']},
+    {name:'セラミッククラウン',items:['セラミックCK kp impの準備・説明・アシスタントができる']},
+    {name:'iTero',items:['スキャニングの設定ができる','必要性が理解でき説明できる','スキャニングできる','スキャンデータを患者さんへ見せて説明できる','他のスタッフへ指導/アドバイスができる']},
+    {name:'ホワイトニング',items:['ホワイトニング/漂白のメカニズムと施術を理解している','ホワイトスポット/パンディング/クラック/テトラサイクリンで変色が認識できる','オフィス/ホームホワイトニングの内容・金額を理解できている','ホワイトニング希望の患者さんへカウンセリングができる','手順・注意事項を理解した上で施術できる','希望されていない患者さんにも提案/おすすめができる','Hysの強い患者さんへの対応ができる']}
+  ]},
+  {id:'s6',title:'チェックシート⑥',subtitle:'歯周病精密検査・治療計画',categories:[
+    {name:'P（精密検査）',items:['Pの流れを患者に説明できる','基本の検診・SPTの内容を把握できている','Pの流れ・保険のルールが理解できている','P検の記載ができる（1点・6点）','レントゲンを読影できる','歯周病についてツールを使用し説明することができる','歯周組織の病状について理解している','検査目的と方法を理解している','6点法にてP検査できる','病状の説明ができ、治療法を含め治療の流れを説明できる','全身疾患について説明できる','個々の患者さんの病状や生活背景に沿って必要な情報を提供できる','患者さんのモチベーションを上げることができる','生活習慣・食生活の指導ができる','他のスタッフへの指導・アドバイスができる']},
+    {name:'歯周病の治療計画立案・説明',items:['初期治療の処置の流れを理解している','Drや先輩DHと相談しながら治療計画を立案することができる','患者さんに正しい知識と治療計画を伝えることができる','自分で治療計画を立案することができる','個々の患者さんに応じた全身疾患を含めた歯周病の説明ができる','Drの治療計画および方針とほぼ一致した治療計画とメンテナンス計画を立案できる','自費治療を含めた最良の治療提案ができる','他のスタッフへの指導/アドバイスができる']}
+  ]},
+  {id:'s7',title:'チェックシート⑦',subtitle:'保険指導・歯周治療・PMTC',categories:[
+    {name:'保険指導',items:['口腔内チェック/検査をもとに治療計画についてカウンセリングできる','基本的な知識のもと、典型的・初歩的な説明ができる','赤染・磨き方の手法・ホームケア用品を理解している','患者さんの口腔内状態に応じて指導内容を変えることができる','患者さんの食習慣・嗜好について聞き出し、応じた指導ができる','患者さんの口腔内状態に応じてホームケア用品を紹介できる','患者さんの性格を把握し、それぞれに合った適切な保険指導ができる','患者さんに積極的に協力してもらえるよう指導できる','非協力的な患者さんにも理解・納得して健康意識を変えることができる','食育に積極的に取り組んでいる','他のスタッフへの指導・アドバイスができる']},
+    {name:'歯周治療',items:['ユリー/コントラでプラーク除去・ポリッシングができる','SCが出来る（バリオス・手用スケーラー使用できる）','超音波スケーラーの使い方/チップの形態が理解できている①','歯石の有無を確認でき、縁上歯石を除去することができる①','歯周ポケット4mmまでの縁下歯石除去ができる②','シャープニングができる②','キュレットを操作することができる②','歯周ポケット4mm以上のSRPができる③','重度歯周病患者さんの対応ができる④','③までクリアしたスタッフのチェックができる']},
+    {name:'PMTC・メンテナンス',items:['メンテナンス継続の必要性と効果を理解し伝えることができる','リコールの流れが把握でき、行うことができる','どのメニューを勧めるか患者さんに合わせ判断できる（SPTか検診）','患者さんと信頼関係を築くことができ、より良い提案ができる','口腔内の異常を発見することができ、迅速に対応することができる','咬合状態のチェックをし異常に気付くことができる','他のスタッフへの指導・アドバイスができる','保険/自費のカルテを読むことができる','オプテックへP関係の入力ができる','保険の流れに沿って入力でき、ミスがないようになる','他のスタッフへの指導・アドバイスができる']}
+  ]},
+  {id:'s8',title:'チェックシート⑧',subtitle:'オプテックの入力',categories:[
+    {name:'オプテックの入力',items:['初診の入力と文章提供の記入ができる','再初診の入力と歯診記入と文章提供ができる','基本・精密検査の入力ができる','SRPの入力を正しくできる','P重防・SPTの入力ができる','グセ充年齢を正しく理解し入力できる','シーラントの適応年齢を正しく理解し入力できる','Ce・う蝕多発傾向が理解し入力できる','2,6歳以下・以上の入力ができる','NG impが正しく入力できる','パノラマ・口写が正しく入力できる','アフタゾロンを理解し入力できる']}
+  ]}
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let TRAINEES,SHEETS;
+const scores={};
+let mode=null;
+let selfId=null;
+let currentSheet='s1';
+let adminSelected=null;
+let currentView='admin';
+let settingsSheet='s1';
+
+// ============================================================
+// SCORE HELPERS (0=未チェック, 1=チェック済み)
+// ============================================================
+function getSelf(tid,sid,ci,ii){try{return scores[tid][sid][ci][ii]?.self||0}catch(e){return 0}}
+function getChief(tid,sid,ci,ii){try{return scores[tid][sid][ci][ii]?.admin||0}catch(e){return 0}}
+function setScoreData(tid,sid,ci,ii,type,val){
+  if(!scores[tid])scores[tid]={};
+  if(!scores[tid][sid])scores[tid][sid]={};
+  if(!scores[tid][sid][ci])scores[tid][sid][ci]={};
+  if(!scores[tid][sid][ci][ii])scores[tid][sid][ci][ii]={self:0,admin:0};
+  scores[tid][sid][ci][ii][type]=val;
+}
+function sheetPct(tid,sid){
+  const s=SHEETS.find(x=>x.id===sid);if(!s)return 0;
+  let tot=0,dn=0;
+  s.categories.forEach((c,ci)=>c.items.forEach((_,ii)=>{tot++;if(getSelf(tid,sid,ci,ii))dn++;}));
+  return tot?Math.round(dn/tot*100):0;
+}
+function totalPct(tid){
+  let tot=0,dn=0;
+  SHEETS.forEach(s=>s.categories.forEach((c,ci)=>c.items.forEach((_,ii)=>{tot++;if(getSelf(tid,s.id,ci,ii))dn++;})));
+  return tot?Math.round(dn/tot*100):0;
+}
+function pCol(p){return p>=70?'var(--grn)':p>=40?'#ef9f27':'var(--red)'}
+function pFill(p){return p>=70?'fill-g':p>=40?'fill-a':'fill-r'}
+function ini(n){return n.split(/\s+/)[0]?.slice(0,2)||n.slice(0,2)}
+
+// ============================================================
+// LOAD / SAVE
+// ============================================================
+async function loadAll(){
+  TRAINEES=JSON.parse(JSON.stringify(DEFAULT_TRAINEES));
+  SHEETS=JSON.parse(JSON.stringify(DEFAULT_SHEETS));
+  try{
+    const [t,s,sc]=await Promise.all([dbGet('trainees'),dbGet('sheets'),dbGetScores()]);
+    if(t)TRAINEES=t;if(s)SHEETS=s;Object.assign(scores,sc);
+  }catch(e){}
+}
+async function saveSettings(){
+  try{await Promise.all([dbSet('trainees',TRAINEES),dbSet('sheets',SHEETS)]);}catch(e){}
+}
+function toast(m){const el=document.getElementById('toast');if(!el)return;el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2000);}
+function isMob(){return window.innerWidth<640}
+
+// ============================================================
+// RENDER HELPERS
+// ============================================================
+function renderIn(id,html){const el=document.getElementById(id);if(el)el.innerHTML=html;}
+
+// ============================================================
+// LOGIN
+// ============================================================
+function renderLogin(){
+  document.getElementById('root').innerHTML=`
+  <div class="login-wrap">
+    <div class="login-box">
+      <div class="login-icon">🦷</div>
+      <div class="login-title">つなしまファミリー歯科</div>
+      <div class="login-sub">衛生士スキルチェックシート</div>
+      <button class="login-btn btn-primary" onclick="enterTrainee()">🩺 衛生士としてログイン</button>
+      <button class="login-btn btn-outline" onclick="showPw()">📊 教育者としてログイン</button>
+      <div id="pw-area"></div>
+    </div>
+  </div>`;
+}
+function showPw(){
+  renderIn('pw-area',`
+  <div class="pw-box">
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:4px">パスワード</div>
+    <input class="pw-input" type="password" inputmode="numeric" pattern="[0-9]*" id="pw-inp" placeholder="数字を入力" onkeydown="if(event.key==='Enter')checkPw()">
+    <button class="pw-btn" onclick="checkPw()">ログイン</button>
+    <div id="pw-err" style="color:var(--red);font-size:12px;margin-top:6px;display:none">パスワードが違います</div>
+  </div>
+  <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--acc);cursor:pointer" onclick="renderLogin()">← 戻る</div>`);
+}
+function checkPw(){
+  if(document.getElementById('pw-inp')?.value==='2740'){enterAdmin();}
+  else{const e=document.getElementById('pw-err');if(e)e.style.display='block';}
+}
+function enterTrainee(){mode='trainee';currentSheet='s1';buildApp();}
+function enterAdmin(){mode='admin';currentView='admin';adminSelected=TRAINEES[0]?.id;selfId=TRAINEES[0]?.id;currentSheet='s1';buildApp();}
+
+// ============================================================
+// BUILD APP SHELL
+// ============================================================
+function buildApp(){
+  if(mode==='trainee'){
+    document.getElementById('root').innerHTML=`
+    <div class="app">
+      <div class="topbar">
+        <div class="logo">つなしまファミリー歯科 <span>スキルチェック</span></div>
+        <button class="logout-btn" onclick="renderLogin()">ログアウト</button>
+      </div>
+      <div class="pc-main">
+        <div class="pc-view" id="pc-view"></div>
+      </div>
+      <div class="mob-content" id="main-content"></div>
+      <button id="register-fab" onclick="manualSave(this)" style="display:none;position:fixed;left:14px;right:14px;bottom:64px;z-index:60;background:var(--acc);color:#fff;border:none;border-radius:24px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;gap:6px">📝 登録</button>
+      <nav class="bot-nav" id="bot-nav"></nav>
+    </div>`;
+    if(!selfId)renderTraineeSelect();
+    else renderMyProgress();
+  } else {
+    document.getElementById('root').innerHTML=`
+    <div class="app">
+      <div class="topbar">
+        <div class="logo">つなしまファミリー歯科 <span>衛生士スキルチェック</span></div>
+        <button class="logout-btn" onclick="renderLogin()">ログアウト</button>
+        <div class="pc-tabs">
+          <button class="tab-btn" id="ptab-trainee" onclick="aSwitch('trainee')">衛生士</button>
+          <button class="tab-btn" id="ptab-admin" onclick="aSwitch('admin')">教育者</button>
+          <button class="tab-btn" id="ptab-settings" onclick="aSwitch('settings')">⚙ 設定</button>
+        </div>
+      </div>
+      <div class="pc-main" style="display:none">
+        <div class="sidebar" id="pc-sidebar"></div>
+        <div class="pc-view" id="pc-view"></div>
+      </div>
+      <div class="mob-content" id="main-content"></div>
+      <nav class="bot-nav" id="bot-nav" style="display:flex"></nav>
+    </div>`;
+    aSwitch(currentView);
+  }
+}
+
+// ============================================================
+// TRAINEE MODE
+// ============================================================
+function renderTraineeSelect(){
+  let h=`<div style="margin-top:8px">
+    <div style="font-size:16px;font-weight:600;margin-bottom:4px">あなたは誰ですか？</div>
+    <div style="font-size:13px;color:var(--txt3);margin-bottom:16px">名前を選んでください</div>`;
+  TRAINEES.forEach(t=>{
+    h+=`<button class="sel-btn" onclick="selfId='${t.id}';currentSheet='s1';renderMyProgress()">
+      <div class="avatar">${ini(t.name)}</div>
+      <div><div style="font-size:15px;font-weight:600">${t.name}</div><div style="font-size:12px;color:var(--txt3)">${t.joined}入社</div></div>
+    </button>`;
+  });
+  h+='</div>';
+  renderIn('pc-view',h);
+  renderIn('main-content',h);
+  renderIn('bot-nav','');
+  const fab=document.getElementById('register-fab');
+  if(fab)fab.style.display='none';
+}
+function renderMyProgress(){
+  if(!selfId){renderTraineeSelect();return;}
+  const html=buildAdminTraineeHTML(true);
+  renderIn('pc-view',html);
+  renderIn('main-content',html);
+  // ボトムナビ＝シートタブ
+  renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="tSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
+  const fab=document.getElementById('register-fab');
+  if(fab)fab.style.display='flex';
+}
+function scrollToActiveTab(){
+  setTimeout(()=>{
+    const tab=document.getElementById('stab-'+currentSheet);
+    if(tab)tab.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  },80);
+}
+function tSelSheet(id){
+  currentSheet=id;
+  renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="tSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
+  renderMyProgress();
+  scrollToActiveTab();
+}
+function tToggleSelf(ci,ii){
+  const cur=getSelf(selfId,currentSheet,ci,ii);
+  const nv=cur?0:1;
+  setScoreData(selfId,currentSheet,ci,ii,'self',nv);
+  const av=getChief(selfId,currentSheet,ci,ii);
+  dbSaveScore(selfId,currentSheet,ci,ii,nv,av);
+  renderMyProgress();
+}
+
+// 登録ボタン：現在のシートの全項目を再送信し、完了フィードバックを表示
+async function manualSave(btn){
+  if(!selfId)return;
+  const orig=btn.innerHTML;
+  btn.innerHTML='⏳ 登録中...';
+  btn.disabled=true;
+  const sheet=SHEETS.find(s=>s.id===currentSheet);
+  if(sheet){
+    const tasks=[];
+    sheet.categories.forEach((cat,ci)=>{
+      cat.items.forEach((_,ii)=>{
+        const sv=getSelf(selfId,currentSheet,ci,ii);
+        const av=getChief(selfId,currentSheet,ci,ii);
+        tasks.push(dbSaveScore(selfId,currentSheet,ci,ii,sv,av));
+      });
+    });
+    await Promise.all(tasks);
+  }
+  btn.innerHTML='✓ 登録しました';
+  toast('登録しました');
+  setTimeout(()=>{
+    btn.innerHTML=orig;
+    btn.disabled=false;
+  },1500);
+}
+
+// カテゴリHTML生成（衛生士・教育者共通）
+function buildCategoryHTML(tid,sid,viewMode){
+  const sheet=SHEETS.find(s=>s.id===sid);if(!sheet)return '';
+  let h=`<div style="font-size:12px;color:var(--txt3);margin-bottom:10px">${sheet.subtitle}</div>`;
+  sheet.categories.forEach((cat,ci)=>{
+    let cd=0,ct=cat.items.length;
+    cat.items.forEach((_,ii)=>{if(getSelf(tid,sid,ci,ii))cd++;});
+    const cp=Math.round(cd/ct*100);
+    h+=`<div class="cat-card"><div class="cat-head">
+      <div class="cat-name">${cat.name}</div>
+      <div class="cat-bar-w"><div class="cat-bar"><div class="cat-bar-f" style="width:${cp}%"></div></div></div>
+      <div class="cat-prog">${cd}/${ct}</div>
+    </div><div class="cat-body">`;
+    cat.items.forEach((item,ii)=>{
+      const sv=getSelf(tid,sid,ci,ii);
+      const av=getChief(tid,sid,ci,ii);
+      h+=`<div class="task"><div class="task-row">
+        <div class="task-txt ${sv&&av?'done':''}">${item}</div>`;
+      if(viewMode==='trainee'){
+        // 自己+教育者両方チェック済みなら◎、自己のみなら✓
+        const bothChecked = sv && av;
+        h+=`<div class="check-btn ${bothChecked?'checked-both':sv?'checked-self':''}" onclick="tToggleSelf(${ci},${ii})">${bothChecked?'◎':sv?'✓':''}</div>`;
+      } else {
+        // 教育者：衛生士チェック（読み取り）＋チーフチェック（常に表示）
+        h+=`<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:11px;color:var(--acc);font-weight:600;min-width:36px;text-align:right">衛生士</span>
+            <div class="check-btn readonly ${sv?'checked-self':''}" style="width:36px;height:36px">${sv?'✓':''}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:11px;color:var(--grn);font-weight:600;min-width:36px;text-align:right">教育者</span>
+            <div class="check-btn ${av?'checked-chief':''}" onclick="aToggleChief('${tid}','${sid}',${ci},${ii})" style="width:36px;height:36px">${av?'✓':''}</div>
+          </div>
+        </div>`;
+      }
+      h+=`</div></div>`;
+    });
+    h+=`</div></div>`;
+  });
+  return h;
+}
+
+// ============================================================
+// ADMIN MODE
+// ============================================================
+function aSwitch(v){
+  currentView=v;
+  ['trainee','admin','settings'].forEach(tab=>{
+    const el=document.getElementById('ptab-'+tab);
+    if(el)el.className='tab-btn'+(tab===v?' active':'');
+  });
+  const pcMain=document.getElementById('pc-sidebar')?.closest('.pc-main')||document.querySelector('.pc-main');
+  const mobContent=document.getElementById('main-content');
+  if(window.innerWidth>=640){
+    // PC
+    if(pcMain)pcMain.style.display='flex';
+    if(mobContent)mobContent.style.display='none';
+    const botNav=document.getElementById('bot-nav');
+    if(botNav)botNav.style.display='none';
+    renderAdminPC();
+  } else {
+    // スマホ
+    if(pcMain)pcMain.style.display='none';
+    if(mobContent)mobContent.style.display='block';
+    const botNav=document.getElementById('bot-nav');
+    if(botNav)botNav.style.display='flex';
+    updateAdminBotNav();
+    renderAdminMob();
+  }
+}
+function updateAdminBotNav(){
+  const v=currentView;
+  if(v==='trainee'){
+    // 衛生士チェックシート表示中はシートタブ
+    renderIn('bot-nav',SHEETS.map(s=>`<button class="bot-btn ${s.id===currentSheet?'active':''}" onclick="aSelSheet('${s.id}')">${s.subtitle}</button>`).join(''));
+  } else {
+    // 4名の名前＋設定ボタン
+    let h=TRAINEES.map(t=>`<button class="bot-btn ${adminSelected===t.id&&v==='admin'?'active':''}" onclick="aSwitchToTrainee('${t.id}')">${t.name.split(/\s+/)[0]}</button>`).join('');
+    h+=`<button class="bot-btn ${v==='settings'?'active':''}" onclick="aSwitch('settings')">⚙️設定</button>`;
+    renderIn('bot-nav',h);
+  }
+}
+function aSwitchToTrainee(tid){
+  adminSelected=tid;
+  selfId=tid;
+  currentView='admin';
+  currentSheet='s1'; // 人を切り替えた時だけs1に戻す
+  if(window.innerWidth>=640){
+    renderAdminPC();
+  } else {
+    updateAdminBotNav();
+    renderAdminMob();
+  }
+}
+function aSelSheet(id){
+  currentSheet=id;
+  if(window.innerWidth>=640){
+    renderAdminPC();
+  } else {
+    renderAdminMob();
+  }
+  scrollToActiveTab();
+}
+function renderAdminMob(){
+  if(currentView==='trainee') renderIn('main-content',buildAdminTraineeHTML());
+  else if(currentView==='admin') renderIn('main-content',buildAdminPersonHTML());
+  else if(currentView==='settings') renderIn('main-content',buildSettingsHTML());
+}
+function renderAdminPC(){
+  let sb='<div class="sb-sec">衛生士</div>';
+  TRAINEES.forEach(t=>{
+    const p=totalPct(t.id);
+    sb+=`<div class="sb-item ${t.id===adminSelected&&currentView==='admin'?'active':''}" onclick="aSwitchToTrainee('${t.id}')">${t.name}<span class="sb-pct" style="color:${pCol(p)}">${p}%</span></div>`;
+  });
+  if(currentView==='settings')sb='<div class="sb-sec">管理</div><div class="sb-item active">設定</div>';
+  renderIn('pc-sidebar',sb);
+  if(currentView==='admin') renderIn('pc-view',buildAdminPersonHTML());
+  else if(currentView==='trainee') renderIn('pc-view',buildAdminTraineeHTML());
+  else if(currentView==='settings') renderIn('pc-view',buildSettingsHTML());
+}
+function aSelTrainee(id){selfId=id;adminSelected=id;currentSheet='s1';aSwitch('trainee');}
+function aSelAdmin(id){aSwitchToTrainee(id);}
+function aToggleChief(tid,sid,ci,ii){
+  const cur=getChief(tid,sid,ci,ii);
+  const nv=cur?0:1;
+  setScoreData(tid,sid,ci,ii,'admin',nv);
+  const sv=getSelf(tid,sid,ci,ii);
+  dbSaveScore(tid,sid,ci,ii,sv,nv);
+  if(window.innerWidth>=640){renderAdminPC();}else{renderAdminMob();}
+}
+
+// 教育者の衛生士タブ（isTraineeMode=trueなら衛生士モードとして使用）
+function buildAdminTraineeHTML(isTraineeMode){
+  if(!selfId)selfId=TRAINEES[0]?.id;
+  const t=TRAINEES.find(x=>x.id===selfId);
+  const overall=totalPct(selfId);
+  let h='<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;-webkit-overflow-scrolling:touch;scrollbar-width:none">';
+  TRAINEES.forEach(t2=>{
+    const p=totalPct(t2.id);
+    const onclick=isTraineeMode?`selfId='${t2.id}';currentSheet='s1';renderMyProgress()`:`aSelTrainee('${t2.id}')`;
+    h+=`<div onclick="${onclick}" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;cursor:pointer;padding:4px 6px;-webkit-tap-highlight-color:transparent">
+      <div class="avatar" style="${t2.id===selfId?'border:2.5px solid var(--acc)':''}">${ini(t2.name)}</div>
+      <div style="font-size:11px;white-space:nowrap">${t2.name.split(/\s+/)[0]}</div>
+      <div style="font-size:11px;font-weight:700;color:${pCol(p)}">${p}%</div>
+    </div>`;
+  });
+  h+=`</div>
+  <div class="summary">
+    <div style="font-size:12px;opacity:.8;margin-bottom:2px">${t.name}</div>
+    <div class="sum-pct">${overall}%</div>
+    <div class="sum-sub">自己チェック済み</div>
+    <div class="sum-bar"><div class="sum-fill" style="width:${overall}%"></div></div>
+  </div>
+  <div id="sheet-tabs-top" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none">`;
+  const sheetSelectFn=isTraineeMode?`tSelSheet`:`aSelSheet`;
+  SHEETS.forEach(s=>{
+    const p=sheetPct(selfId,s.id);
+    h+=`<button id="stab-${s.id}" onclick="${sheetSelectFn}('${s.id}')" style="flex-shrink:0;padding:6px 12px;border:1px solid ${s.id===currentSheet?'var(--acc)':'var(--bdr2)'};border-radius:20px;font-size:12px;cursor:pointer;background:${s.id===currentSheet?'var(--acc)':'var(--sur)'};color:${s.id===currentSheet?'#fff':'var(--txt2)'};white-space:nowrap;font-family:inherit">${s.subtitle} ${p}%</button>`;
+  });
+  h+='</div>';
+  h+=buildCategoryHTML(selfId,currentSheet,isTraineeMode?'trainee':'admin');
+  return h;
+}
+
+// 教育者が一人を選んで確認・入力する画面
+function buildAdminPersonHTML(){
+  if(!adminSelected)adminSelected=TRAINEES[0]?.id;
+  selfId=adminSelected;
+  const t=TRAINEES.find(x=>x.id===adminSelected);
+  const overall=totalPct(adminSelected);
+  let tot=0,selfDn=0,chiefDn=0;
+  SHEETS.forEach(s=>s.categories.forEach((c,ci)=>c.items.forEach((_,ii)=>{tot++;if(getSelf(adminSelected,s.id,ci,ii))selfDn++;if(getChief(adminSelected,s.id,ci,ii))chiefDn++;})));
+  let h=`
+  <div class="summary">
+    <div style="font-size:12px;opacity:.8;margin-bottom:2px">${t.name}</div>
+    <div class="sum-pct">${overall}%</div>
+    <div class="sum-sub">自己 ${selfDn} / 教育者 ${chiefDn} / 全${tot}</div>
+    <div class="sum-bar"><div class="sum-fill" style="width:${overall}%"></div></div>
+  </div>
+  <div id="sheet-tabs-top" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none">`;
+  SHEETS.forEach(s=>{
+    const p=sheetPct(adminSelected,s.id);
+    h+=`<button id="stab-${s.id}" onclick="aSelSheet('${s.id}')" style="flex-shrink:0;padding:6px 12px;border:1px solid ${s.id===currentSheet?'var(--acc)':'var(--bdr2)'};border-radius:20px;font-size:12px;cursor:pointer;background:${s.id===currentSheet?'var(--acc)':'var(--sur)'};color:${s.id===currentSheet?'#fff':'var(--txt2)'};white-space:nowrap;font-family:inherit">${s.subtitle} ${p}%</button>`;
+  });
+  h+='</div>';
+  h+=buildCategoryHTML(adminSelected,currentSheet,'admin');
+  return h;
+}
+
+// 設定画面
+function buildSettingsHTML(){
+  const sheet=SHEETS.find(s=>s.id===settingsSheet);
+  const sIdx=SHEETS.findIndex(s=>s.id===settingsSheet);
+  let h=`<div class="info-box">💡 このページで直接編集するか、Claudeに依頼することができます。</div>
+  <div class="set-sec"><h2>👤 衛生士の管理</h2>`;
+  TRAINEES.forEach((t,ti)=>{
+    h+=`<div class="t-row">
+      <div class="avatar" style="width:32px;height:32px;font-size:11px">${ini(t.name)}</div>
+      <div class="t-fields">
+        <input type="text" value="${t.name}" placeholder="名前" oninput="TRAINEES[${ti}].name=this.value;saveSettings()">
+        <input type="text" value="${t.joined}" placeholder="入社年月" oninput="TRAINEES[${ti}].joined=this.value;saveSettings()">
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="if(confirm('削除？')){TRAINEES.splice(${ti},1);saveSettings();aSwitch(currentView);}">削除</button>
+    </div>`;
+  });
+  h+=`<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+    <input type="text" id="new-name" placeholder="名前">
+    <input type="text" id="new-join" placeholder="入社年月（例：2026年4月）">
+    <button class="btn btn-acc" onclick="addTrainee()">+ 追加</button>
+  </div></div>
+  <div class="set-sec"><h2>📝 チェック項目の編集</h2>
+  <div class="sheet-sel">`;
+  SHEETS.forEach(s=>{
+    h+=`<button class="ss-btn ${s.id===settingsSheet?'active':''}" onclick="settingsSheet='${s.id}';aSwitch(currentView)">${s.subtitle}</button>`;
+  });
+  h+=`</div>`;
+  sheet.categories.forEach((cat,ci)=>{
+    h+=`<div class="edit-cat">
+      <div class="edit-cat-head">
+        <input type="text" value="${cat.name}" style="flex:1;background:transparent;border:none;border-bottom:1px solid var(--bdr2);border-radius:0;font-weight:600;padding:4px" oninput="SHEETS[${sIdx}].categories[${ci}].name=this.value;saveSettings()">
+        <button class="btn btn-danger btn-sm" onclick="if(confirm('削除？')){SHEETS[${sIdx}].categories.splice(${ci},1);saveSettings();aSwitch(currentView);}">削除</button>
+      </div>
+      <div class="edit-items">`;
+    cat.items.forEach((item,ii)=>{
+      h+=`<div class="edit-item-row">
+        <input type="text" value="${item}" oninput="SHEETS[${sIdx}].categories[${ci}].items[${ii}]=this.value;saveSettings()">
+        <button class="btn btn-danger btn-sm" onclick="SHEETS[${sIdx}].categories[${ci}].items.splice(${ii},1);saveSettings();aSwitch(currentView)">×</button>
+      </div>`;
+    });
+    h+=`<div style="display:flex;gap:6px;margin-top:6px">
+        <input type="text" id="ni-${sIdx}-${ci}" placeholder="新しい項目..." style="flex:1;font-size:12px">
+        <button class="btn btn-acc btn-sm" onclick="addItem(${sIdx},${ci})">追加</button>
+      </div></div></div>`;
+  });
+  h+=`<div style="display:flex;gap:8px;margin-top:10px">
+    <input type="text" id="new-cat" placeholder="新しいカテゴリ名" style="flex:1">
+    <button class="btn btn-acc btn-sm" onclick="addCat(${sIdx})">+ カテゴリ</button>
+  </div></div>`;
+  return h;
+}
+function addTrainee(){
+  const name=document.getElementById('new-name')?.value.trim();
+  const join=document.getElementById('new-join')?.value.trim();
+  if(!name)return;
+  TRAINEES.push({id:'t'+Date.now(),name,joined:join||''});
+  saveSettings();toast('追加しました');aSwitch(currentView);
+}
+function addItem(si,ci){
+  const inp=document.getElementById(`ni-${si}-${ci}`);
+  if(!inp?.value.trim())return;
+  SHEETS[si].categories[ci].items.push(inp.value.trim());
+  saveSettings();toast('追加しました');aSwitch(currentView);
+}
+function addCat(si){
+  const inp=document.getElementById('new-cat');
+  if(!inp?.value.trim())return;
+  SHEETS[si].categories.push({name:inp.value.trim(),items:[]});
+  saveSettings();toast('追加しました');aSwitch(currentView);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+(async()=>{
+  await loadAll();
+  renderLogin();
+})();
+</script>
+</body>
+</html>
